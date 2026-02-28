@@ -1,0 +1,35 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.AprendemosLaVida" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorSecondary">@color/accent</item>
+        <item name="android:statusBarColor">@color/primary_dark</item>
+        <item name="android:windowBackground">@drawable/bg_gradient</item>
+        <item name="alertDialogTheme">@style/ThemeOverlay.Aprendemos.AlertDialog</item>
+    </style>
+
+    <style name="Widget.Aprendemos.Button" parent="Widget.Material3.Button">
+        <item name="android:backgroundTint">@color/primary</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="cornerRadius">20dp</item>
+        <item name="android:paddingTop">14dp</item>
+        <item name="android:paddingBottom">14dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">18sp</item>
+    </style>
+
+    <style name="ThemeOverlay.Aprendemos.AlertDialog" parent="ThemeOverlay.AppCompat.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/bg_dialog_round</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.Aprendemos.DialogButton.Positive</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.Aprendemos.DialogButton.Negative</item>
+    </style>
+
+    <style name="Widget.Aprendemos.DialogButton.Positive" parent="Widget.AppCompat.Button.ButtonBar.AlertDialog">
+        <item name="android:textColor">@color/primary</item>
+    </style>
+
+    <style name="Widget.Aprendemos.DialogButton.Negative" parent="Widget.AppCompat.Button.ButtonBar.AlertDialog">
+        <item name="android:textColor">@color/accent</item>
+    </style>
+</resources>

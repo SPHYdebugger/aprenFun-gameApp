@@ -1,0 +1,337 @@
+[
+  {
+    "text": "¿Qué necesitan todos los seres vivos? 🌱",
+    "options": ["Agua y alimento", "Televisión", "Juguetes", "Ropa"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Cuál es una función vital? 💓",
+    "options": ["Respiración", "Dormir", "Jugar", "Pintar"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué reino fabrica su propio alimento? 🌿",
+    "options": ["Plantas", "Animales", "Hongos", "Bacterias"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Las bacterias son grandes o pequeñas? 🔬",
+    "options": ["Muy pequeñas", "Grandes", "Enormes", "Gigantes"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Cuántas células tiene un ser unicelular? 🧫",
+    "options": ["Una", "Dos", "Muchas", "Cien"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Cuál es un ser vivo? 🐟",
+    "options": ["Pez", "Piedra", "Robot", "Nube"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué usan las plantas para hacer su alimento? ☀️",
+    "options": ["Luz del sol", "Sombras", "Luna", "Estrellas"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué hacen todos los seres vivos? 🔁",
+    "options": ["Nacen, crecen y mueren", "Solo juegan", "Solo comen", "Solo duermen"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué es una célula? 🔍",
+    "options": ["La unidad básica de la vida", "Un planeta", "Un juguete", "Una piedra"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Cuál es un ser unicelular? 🦠",
+    "options": ["Bacteria", "Perro", "Árbol", "Hongo"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué reino es unicelular? 🦠",
+    "options": ["Bacterias", "Animales", "Plantas", "Hongos"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Cómo se llaman los seres con muchas células? 🧬",
+    "options": ["Pluricelulares", "Unicelulares", "Microbios", "Gigantes"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Cuál es una función vital? 🍽️",
+    "options": ["Nutrición", "Bailar", "Cantar", "Pintar"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Cuál es una función vital? 👶",
+    "options": ["Reproducción", "Dibujar", "Leer", "Correr"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué reino incluye a las algas? 🌊",
+    "options": ["Protistas", "Animales", "Plantas", "Hongos"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Los protistas son siempre grandes? 🔬",
+    "options": ["No, suelen ser pequeños", "Sí, son enormes", "Solo medianos", "Solo gigantes"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué reino incluye a los árboles? 🌳",
+    "options": ["Plantas", "Animales", "Hongos", "Bacterias"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué reino incluye a los perros? 🐕",
+    "options": ["Animales", "Plantas", "Protistas", "Bacterias"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Cuál es un ser pluricelular? 🐘",
+    "options": ["Elefante", "Bacteria", "Ameba", "Paramecio"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué necesitan los seres vivos para respirar? 💨",
+    "options": ["Oxígeno", "Jugo", "Azúcar", "Sal"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué reino tiene seres que descomponen? 🍄",
+    "options": ["Hongos", "Animales", "Plantas", "Protistas"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Cuales son las 2 características de todos los seres vivos? ✅",
+    "options": ["Están compuestos por celulas y realizan las funciones vitales", "Se mueven", "Se ven", "Están muertos"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué es un ser vivo? 🌍",
+    "options": ["Un ser que tiene vida", "Un juguete", "Una roca", "Una nube"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Todos los seres vivos están formados por…? 🧫",
+    "options": ["Células", "Piedras", "Plástico", "Metal"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Cuál NO es una función vital? 🚫",
+    "options": ["Jugar", "Nutrición", "Relación", "Reproducción"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Para qué sirve la función de relación? 👀",
+    "options": ["Para sentir y responder", "Para dormir", "Para crecer", "Para comer dulces"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué hacen los seres vivos con la nutrición? 🍎",
+    "options": ["Consiguen energía", "Se divierten", "Se esconden", "Vuelan"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué función vital permite tener hijos? 👶",
+    "options": ["Reproducción", "Relación", "Nutrición", "Movimiento"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué necesitan los animales para alimentarse? 🍖",
+    "options": ["Otros seres vivos", "Luz solar", "Tierra", "Agua salada"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Las plantas necesitan sol para vivir? ☀️",
+    "options": ["Sí", "No", "Solo de noche", "Solo en invierno"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué tipo de seres vivos se ven con microscopio? 🔬",
+    "options": ["Unicelulares", "Elefantes", "Árboles", "Personas"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué significa pluricelular? 🧬",
+    "options": ["Muchas células", "Una célula", "Sin células", "Células gigantes"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Cuál de estos es unicelular? 🦠",
+    "options": ["Bacteria", "Gato", "Pino", "Seta"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Las personas somos…? 🧍",
+    "options": ["Pluricelulares", "Unicelulares", "Bacterias", "Protistas"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué reino fabrica su alimento con la luz del sol? ☀️",
+    "options": ["Plantas", "Animales", "Hongos", "Bacterias"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué reino incluye a los humanos? 🧑",
+    "options": ["Animales", "Plantas", "Hongos", "Protistas"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Los hongos fabrican su alimento? 🍄",
+    "options": ["No", "Sí", "Solo de noche", "Solo en verano"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué ejemplo es un hongo? 🍄",
+    "options": ["Seta", "Perro", "Alga verde", "Bacteria"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué hacen los hongos en la naturaleza? 🍄",
+    "options": ["Descomponen restos", "Fabrican oxígeno", "Cazan animales", "Vuelan"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué reino puede causar enfermedades? 🧫",
+    "options": ["Bacterias", "Plantas", "Animales", "Rocas"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Todas las bacterias son malas? 🤔",
+    "options": ["No", "Sí", "Solo las grandes", "Solo las pequeñas"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué alimento se hace con bacterias? 🥛",
+    "options": ["Yogur", "Pan seco", "Caramelos", "Chocolate"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué reino incluye protozoos y algas? 🌊",
+    "options": ["Protistas", "Animales", "Hongos", "Plantas"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Las algas viven principalmente en…? 🌊",
+    "options": ["El agua", "El desierto", "El cielo", "Las montañas"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué reino es muy variado? 🧩",
+    "options": ["Protistas", "Animales", "Plantas", "Rocas"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué usan las plantas además del sol? 💧",
+    "options": ["Agua y tierra", "Televisión", "Ropa", "Juguetes"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Los animales pueden desplazarse? 🏃",
+    "options": ["Sí, la mayoría", "No, nunca", "Solo las plantas", "Solo los hongos"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué reino NO se desplaza? 🌿",
+    "options": ["Plantas", "Animales", "Personas", "Peces"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué necesitan todos los seres vivos para vivir? ⚡",
+    "options": ["Energía", "Juguetes", "Pantallas", "Colores"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué es la biodiversidad? 🌎",
+    "options": ["Variedad de seres vivos", "Un animal", "Una planta", "Una célula"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Dónde suele haber más biodiversidad? 🏞️",
+    "options": ["Bosques y mares", "Desiertos", "Hielo", "Espacio"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué pasaría sin hongos? 🧹",
+    "options": ["Se acumularían restos", "Nada", "Más juguetes", "Más animales"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué tamaño tienen muchas bacterias? 🔬",
+    "options": ["Microscópico", "Gigante", "Mediano", "Visible sin lupa"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué instrumento usamos para ver bacterias? 🔬",
+    "options": ["Microscopio", "Telescopio", "Lupa gigante", "Prismáticos"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué hacen los seres vivos al nacer? 🌱",
+    "options": ["Crecen", "Se apagan", "Desaparecen", "Se rompen"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Cuál de estos es un protista? 🧫",
+    "options": ["Ameba", "Perro", "Árbol", "Seta"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué reino incluye los mohos? 🍄",
+    "options": ["Hongos", "Plantas", "Animales", "Bacterias"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué reino tiene seres visibles y microscópicos? 🔬",
+    "options": ["Hongos", "Animales", "Plantas", "Rocas"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué hacen las plantas con el oxígeno? 🌿",
+    "options": ["Lo producen", "Lo comen", "Lo rompen", "Lo esconden"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Cuál es una respuesta al entorno? ⚠️",
+    "options": ["Huir del peligro", "Dormir", "Soñar", "Pintar"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué función vital usamos al comer? 🍽️",
+    "options": ["Nutrición", "Relación", "Reproducción", "Juego"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué reino incluye seres muy pequeños y simples? 🦠",
+    "options": ["Bacterias", "Animales", "Plantas", "Hongos"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué tienen en común todos los seres vivos? 🧩",
+    "options": ["Células y funciones vitales", "Color", "Tamaño", "Velocidad"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Cuál de estos NO es un ser vivo? 🪨",
+    "options": ["Piedra", "Perro", "Árbol", "Bacteria"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué función vital permite reaccionar al frío? 🧣",
+    "options": ["Relación", "Nutrición", "Reproducción", "Descanso"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué reino incluye plantas con flores? 🌸",
+    "options": ["Plantas", "Animales", "Hongos", "Protistas"],
+    "correctIndex": 0
+  },
+  {
+    "text": "¿Qué reino es el más antiguo? 🧬",
+    "options": ["Bacterias", "Animales", "Plantas", "Hongos"],
+    "correctIndex": 0
+  }
+]

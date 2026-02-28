@@ -1,0 +1,14 @@
+<resources>
+    <color name="primary">#FF7A59</color>
+    <color name="primary_dark">#E45C3D</color>
+    <color name="accent">#FFB703</color>
+    <color name="text_primary">#2D2A32</color>
+    <color name="text_secondary">#4A4A4A</color>
+    <color name="surface">#FFF3E6</color>
+    <color name="background_start">#FFE6F0</color>
+    <color name="background_end">#E6F7FF</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="answer_wrong">#FF0000</color>
+    <color name="answer_correct">#66BB6A</color>
+</resources>

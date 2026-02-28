@@ -1,0 +1,188 @@
+<resources>
+    <string name="app_name">AprenFun!!</string>
+
+    <string name="main_title">AprenFun!! 🌱</string>
+    <string name="main_play">Xogar ▶️</string>
+    <string name="main_how_to_play">Como xogar 📘</string>
+    <string name="main_scores">Puntuacións ⭐</string>
+    <string name="main_settings">Axustes ⚙️</string>
+    <string name="mode_natural">Naturais 🌿</string>
+    <string name="mode_math">Matemáticas ✖️</string>
+    <string name="mode_english">Inglés 🇬🇧</string>
+    <string name="mode_social">C. Sociais 🌍</string>
+    <string name="social_theme_0">Tema 0. Sistema Solar</string>
+    <string name="social_theme_1">Tema 1. Paisaxe</string>
+
+    <string name="settings_title">Axustes</string>
+    <string name="change_language">Cambiar idioma</string>
+    <string name="exit_app">Saír</string>
+    <string name="exit_confirm_title">Saír</string>
+    <string name="exit_confirm_message">Queres pechar a app?</string>
+    <string name="exit_confirm_game_message">Se saes agora perderás a túa puntuación actual.</string>
+    <string name="exit_confirm_yes">Si</string>
+    <string name="exit_confirm_no">Non</string>
+
+    <string name="how_to_title">Como xogar ✨</string>
+    <string name="how_to_text">En AprenFun!! tes catro modos de xogo. Escolle o que máis che guste e trata de conseguir a mellor puntuación.\n\nXOGO DE NATURAIS\nNeste modo responderás 20 preguntas sobre a vida e a natureza. Cada pregunta ten 4 posibles respostas e só unha é correcta. Tes un tempo limitado para contestar: canto máis rápido acertes, máis puntos conseguirás. Se fallas, non sumas puntos nesa pregunta e pasarás á seguinte, así que concéntrate e responde con calma pero sen perder tempo. Ao rematar as 20 preguntas verás a túa puntuación total e poderás gardala para comparar con outras partidas.\n\nXOGO DE MATEMÁTICAS\nNeste modo practicarás as táboas de multiplicar do 1 ao 5, con multiplicacións desde x1 ata x10. Tamén son 20 preguntas en total. Aparecerán 4 respostas e só unha será correcta. A velocidade conta: canto máis rápido acertes, máis puntos gañarás. Se fallas, aparecerá un recordatorio coa forma correcta da multiplicación e restaranse 20 puntos. A mesma pregunta repetirase ata que a acertes, así que úsaa para aprender e mellorar. Ao finalizar verás a túa puntuación total e poderás gardala.\n\nXOGO DE INGLÉS\nNeste modo responderás 20 preguntas en inglés. O funcionamento é como en Naturais: 4 respostas, unha correcta, e canto máis rápido acertes, máis puntos. Se fallas, cámbiase de pregunta. Para que teñas tempo de ler con calma, o tempo por pregunta é o dobre que nos outros modos. Ao finalizar poderás gardar a túa puntuación na táboa de inglés.</string>
+    <string name="back_button">Volver ⬅️</string>
+
+    <string name="game_progress_placeholder">Pregunta 1/20</string>
+    <string name="game_timer_placeholder">10s</string>
+    <string name="game_question_placeholder">Pregunta</string>
+    <string name="game_points_placeholder">+100</string>
+    <string name="game_answer_1">Resposta 1</string>
+    <string name="game_answer_2">Resposta 2</string>
+    <string name="game_answer_3">Resposta 3</string>
+    <string name="game_answer_4">Resposta 4</string>
+    <string name="game_progress_format">Pregunta %1$d/%2$d</string>
+    <string name="timer_seconds_format">%1$ds</string>
+    <string name="points_correct_format">+%1$d ⭐</string>
+    <string name="points_wrong">0 😅</string>
+    <string name="time_up">Tempo esgotado ⏰</string>
+    <string name="math_question_format">Canto é %1$d x %2$d?</string>
+    <string name="math_wrong_message_format">LEMBRA %1$d x %2$d = %3$d</string>
+    <string name="math_add_sub_wrong_message_format">LEMBRA %1$s = %2$d</string>
+    <string name="math_add_sub_question_format">Canto é %1$d %2$s %3$d?</string>
+    <string name="math_mode_add_sub">Sumas / Restas ➕➖</string>
+    <string name="math_mode_multiplications">Multiplicacións ✖️</string>
+    <string name="ok_button">OK</string>
+    <string name="points_penalty_format">-%1$d</string>
+
+    <string name="result_title">Resultados 🏆</string>
+    <string name="result_score_placeholder">Puntuación final: 0</string>
+    <string name="result_time_placeholder">Tempo total: 0s</string>
+    <string name="result_score_format">Puntuación final: %1$d</string>
+    <string name="result_time_format">Tempo total: %1$ds</string>
+    <string name="message_great">¡Xenial!</string>
+    <string name="message_good">Moi ben!</string>
+    <string name="message_keep_practicing">Segue practicando!</string>
+    <string name="play_again">Xogar outra vez 🔁</string>
+    <string name="save_score">Gardar puntuación 💾</string>
+    <string name="view_scores">Ver puntuacións ⭐</string>
+    <string name="menu_button">Menú 🏠</string>
+    <string name="save_score_title">Gardar puntuación</string>
+    <string name="save_score_hint">Escribe o teu nome</string>
+    <string name="save_score_positive">Gardar</string>
+    <string name="save_score_negative">Cancelar</string>
+    <string name="save_score_toast">Puntuación gardada</string>
+    <string name="score_default_name">Sen nome</string>
+
+    <string name="scores_title_natural">Puntuacións Naturais ⭐</string>
+    <string name="scores_title_math">Puntuacións Matemáticas ✖️</string>
+    <string name="scores_title_english">Puntuacións Inglés 🇬🇧</string>
+    <string name="scores_title_social">Puntuacións C. Sociais 🌍</string>
+    <string name="scores_empty">Aínda non hai puntuacións</string>
+    <string name="score_item_format">%1$d. %2$s - %3$d pts - %4$s</string>
+    <string name="scores_clear_title">Borrar puntuacións</string>
+    <string name="scores_clear_message">Queres borrar todas as puntuacións deste xogo?</string>
+    <string name="scores_clear_confirm">Borrar</string>
+    <string name="scores_clear_cancel">Cancelar</string>
+    <string name="scores_cleared_toast">Puntuacións borradas</string>
+
+    <string name="eng_q_post_offices_city">Como se di en inglés: Na miña cidade hai 2 oficinas de correos? 📮</string>
+    <string name="eng_q_swimming_pools_town">Como se di en inglés: Hai 2 piscinas no meu pobo? 🏊</string>
+    <string name="eng_q_place_to_buy">Como se chama en inglés o lugar onde vas mercar? 🛍️</string>
+    <string name="eng_q_is_there_cinema_town">Como se fai en inglés a pregunta: Hai cine no teu pobo? 🎬</string>
+    <string name="eng_q_there_is_hospital_town">Como se di en inglés: No meu pobo hai un hospital? 🏥</string>
+    <string name="eng_q_no_museum_city">Como se di en inglés: Na miña cidade non hai museo? 🏛️</string>
+    <string name="eng_q_train_station_question">Como se di en inglés: Hai unha estación de tren? 🚆</string>
+    <string name="eng_q_pool_town">Como se di en inglés: No meu pobo hai unha piscina? 🏊</string>
+    <string name="eng_q_no_cinema_city">Como se di en inglés: Non hai cine na miña cidade? 🎥</string>
+    <string name="eng_q_two_hospitals_city">Como se di en inglés: Na miña cidade hai dous hospitais? 🏥</string>
+    <string name="eng_q_post_office_question">Como se di en inglés: Hai unha oficina de correos? 📮</string>
+    <string name="eng_q_cinema_museum_town">Como se di en inglés: No meu pobo hai un cine e un museo? 🎬🏛️</string>
+    <string name="eng_q_many_shops_city">Como se di en inglés: Na miña cidade hai moitas tendas? 🛍️</string>
+    <string name="eng_q_shopping_centre_question">Como se di en inglés: Hai un centro comercial? 🏬</string>
+    <string name="eng_q_no_train_station_town">Como se di en inglés: No meu pobo non hai estación de tren? 🚆</string>
+    <string name="eng_q_park_city">Como se di en inglés: Na miña cidade hai un parque? 🌳</string>
+    <string name="eng_q_hospitals_city_question">Como se di en inglés: Hai hospitais na túa cidade? 🏥</string>
+    <string name="eng_q_two_cinemas_town">Como se di en inglés: No meu pobo hai dous cines? 🎬</string>
+    <string name="eng_q_fire_station_question">Como se di en inglés: Hai unha estación de bombeiros? 🚒</string>
+    <string name="eng_q_museum_city">Como se di en inglés: Na miña cidade hai un museo? 🏛️</string>
+
+    <!-- Sociais - Tema 0: Sistema Solar -->
+    <string name="social_t0_q1_text">Que é o Sol? ☀️</string>
+    <string name="social_t0_q1_a1">Unha estrela</string><string name="social_t0_q1_a2">Un planeta</string><string name="social_t0_q1_a3">Un satélite</string><string name="social_t0_q1_a4">Un cometa</string>
+    <string name="social_t0_q2_text">Que xira arredor do Sol?</string>
+    <string name="social_t0_q2_a1">Os planetas</string><string name="social_t0_q2_a2">As montañas</string><string name="social_t0_q2_a3">Os mares</string><string name="social_t0_q2_a4">As cidades</string>
+    <string name="social_t0_q3_text">Como se chama o camiño que seguen os planetas?</string>
+    <string name="social_t0_q3_a1">Órbita</string><string name="social_t0_q3_a2">Ruta</string><string name="social_t0_q3_a3">Sendeiro</string><string name="social_t0_q3_a4">Carril</string>
+    <string name="social_t0_q4_text">Os planetas teñen luz propia?</string>
+    <string name="social_t0_q4_a1">Non</string><string name="social_t0_q4_a2">Si</string><string name="social_t0_q4_a3">Só algúns</string><string name="social_t0_q4_a4">Só a Terra</string>
+    <string name="social_t0_q5_text">Cal é o planeta no que vivimos?</string>
+    <string name="social_t0_q5_a1">A Terra</string><string name="social_t0_q5_a2">Marte</string><string name="social_t0_q5_a3">Venus</string><string name="social_t0_q5_a4">Saturno</string>
+    <string name="social_t0_q6_text">Que é a Lúa?</string>
+    <string name="social_t0_q6_a1">Un satélite</string><string name="social_t0_q6_a2">Unha estrela</string><string name="social_t0_q6_a3">Un planeta</string><string name="social_t0_q6_a4">Un cometa</string>
+    <string name="social_t0_q7_text">Canto tarda a Terra en xirar sobre si mesma?</string>
+    <string name="social_t0_q7_a1">24 horas</string><string name="social_t0_q7_a2">12 horas</string><string name="social_t0_q7_a3">7 días</string><string name="social_t0_q7_a4">1 ano</string>
+    <string name="social_t0_q8_text">Que provoca o movemento de rotación?</string>
+    <string name="social_t0_q8_a1">Día e noite</string><string name="social_t0_q8_a2">As estacións</string><string name="social_t0_q8_a3">As mareas</string><string name="social_t0_q8_a4">A chuvia</string>
+    <string name="social_t0_q9_text">Que movemento provoca as estacións?</string>
+    <string name="social_t0_q9_a1">Traslación</string><string name="social_t0_q9_a2">Rotación</string><string name="social_t0_q9_a3">Caída</string><string name="social_t0_q9_a4">Salto</string>
+    <string name="social_t0_q10_text">Arredor de que xira a Terra?</string>
+    <string name="social_t0_q10_a1">Do Sol</string><string name="social_t0_q10_a2">De Marte</string><string name="social_t0_q10_a3">De Xúpiter</string><string name="social_t0_q10_a4">Da Lúa</string>
+    <string name="social_t0_q11_text">Cantas capas principais ten a Terra?</string>
+    <string name="social_t0_q11_a1">Tres</string><string name="social_t0_q11_a2">Dúas</string><string name="social_t0_q11_a3">Catro</string><string name="social_t0_q11_a4">Cinco</string>
+    <string name="social_t0_q12_text">Cal NON é unha capa da Terra?</string>
+    <string name="social_t0_q12_a1">Montaña</string><string name="social_t0_q12_a2">Atmosfera</string><string name="social_t0_q12_a3">Hidrosfera</string><string name="social_t0_q12_a4">Xeosfera</string>
+    <string name="social_t0_q13_text">Canto tarda a Lúa en xirar arredor da Terra?</string>
+    <string name="social_t0_q13_a1">28 días</string><string name="social_t0_q13_a2">24 horas</string><string name="social_t0_q13_a3">7 días</string><string name="social_t0_q13_a4">1 ano</string>
+    <string name="social_t0_q14_text">Como se chaman os cambios de forma da Lúa?</string>
+    <string name="social_t0_q14_a1">Fases lunares</string><string name="social_t0_q14_a2">Órbitas</string><string name="social_t0_q14_a3">Sombras</string><string name="social_t0_q14_a4">Voltas</string>
+    <string name="social_t0_q15_text">Que fase ten a Lúa totalmente iluminada?</string>
+    <string name="social_t0_q15_a1">Lúa chea</string><string name="social_t0_q15_a2">Lúa nova</string><string name="social_t0_q15_a3">Cuarto minguante</string><string name="social_t0_q15_a4">Cuarto crecente</string>
+    <string name="social_t0_q16_text">Que fase case non se ve?</string>
+    <string name="social_t0_q16_a1">Lúa nova</string><string name="social_t0_q16_a2">Lúa chea</string><string name="social_t0_q16_a3">Cuarto crecente</string><string name="social_t0_q16_a4">Cuarto minguante</string>
+    <string name="social_t0_q17_text">Que planeta ten aneis?</string>
+    <string name="social_t0_q17_a1">Saturno</string><string name="social_t0_q17_a2">Venus</string><string name="social_t0_q17_a3">Mercurio</string><string name="social_t0_q17_a4">Terra</string>
+    <string name="social_t0_q18_text">Que hai entre Marte e Xúpiter?</string>
+    <string name="social_t0_q18_a1">Cinto de asteroides</string><string name="social_t0_q18_a2">Un océano</string><string name="social_t0_q18_a3">Unha montaña</string><string name="social_t0_q18_a4">Un volcán</string>
+    <string name="social_t0_q19_text">Que planeta está máis preto do Sol?</string>
+    <string name="social_t0_q19_a1">Mercurio</string><string name="social_t0_q19_a2">Neptuno</string><string name="social_t0_q19_a3">Urano</string><string name="social_t0_q19_a4">Saturno</string>
+    <string name="social_t0_q20_text">Que planeta é moi grande e raiado?</string>
+    <string name="social_t0_q20_a1">Xúpiter</string><string name="social_t0_q20_a2">Marte</string><string name="social_t0_q20_a3">Venus</string><string name="social_t0_q20_a4">Mercurio</string>
+
+    <!-- Sociais - Tema 1: Paisaxe -->
+    <string name="social_t1_q1_text">Que é o relevo?</string>
+    <string name="social_t1_q1_a1">As formas do terreo</string><string name="social_t1_q1_a2">Os animais</string><string name="social_t1_q1_a3">As casas</string><string name="social_t1_q1_a4">As rúas</string>
+    <string name="social_t1_q2_text">Que paisaxe ten montañas altas?</string>
+    <string name="social_t1_q2_a1">De montaña</string><string name="social_t1_q2_a2">De costa</string><string name="social_t1_q2_a3">De cidade</string><string name="social_t1_q2_a4">Industrial</string>
+    <string name="social_t1_q3_text">Que paisaxe ten praias?</string>
+    <string name="social_t1_q3_a1">De costa</string><string name="social_t1_q3_a2">De montaña</string><string name="social_t1_q3_a3">De interior</string><string name="social_t1_q3_a4">Industrial</string>
+    <string name="social_t1_q4_text">Que elemento da paisaxe é natural?</string>
+    <string name="social_t1_q4_a1">Río</string><string name="social_t1_q4_a2">Ponte</string><string name="social_t1_q4_a3">Estrada</string><string name="social_t1_q4_a4">Edificio</string>
+    <string name="social_t1_q5_text">Que elemento da paisaxe está construído polas persoas?</string>
+    <string name="social_t1_q5_a1">Ponte</string><string name="social_t1_q5_a2">Val</string><string name="social_t1_q5_a3">Serra</string><string name="social_t1_q5_a4">Río</string>
+    <string name="social_t1_q6_text">Que é unha serra?</string>
+    <string name="social_t1_q6_a1">Un conxunto de montañas</string><string name="social_t1_q6_a2">Unha praia</string><string name="social_t1_q6_a3">Un lago</string><string name="social_t1_q6_a4">Unha rúa</string>
+    <string name="social_t1_q7_text">Que é un val?</string>
+    <string name="social_t1_q7_a1">Zona baixa entre montañas</string><string name="social_t1_q7_a2">Unha cidade</string><string name="social_t1_q7_a3">Unha illa</string><string name="social_t1_q7_a4">Un porto</string>
+    <string name="social_t1_q8_text">Que elemento pertence á costa?</string>
+    <string name="social_t1_q8_a1">Cantil</string><string name="social_t1_q8_a2">Serra</string><string name="social_t1_q8_a3">Val</string><string name="social_t1_q8_a4">Meseta</string>
+    <string name="social_t1_q9_text">Que é unha península?</string>
+    <string name="social_t1_q9_a1">Terra rodeada case por auga</string><string name="social_t1_q9_a2">Unha montaña</string><string name="social_t1_q9_a3">Un río</string><string name="social_t1_q9_a4">Un val</string>
+    <string name="social_t1_q10_text">Que é unha illa?</string>
+    <string name="social_t1_q10_a1">Terra rodeada de auga</string><string name="social_t1_q10_a2">Unha ponte</string><string name="social_t1_q10_a3">Un val</string><string name="social_t1_q10_a4">Un monte</string>
+    <string name="social_t1_q11_text">Que paisaxe ten máis construcións humanas?</string>
+    <string name="social_t1_q11_a1">Humanizado</string><string name="social_t1_q11_a2">Natural</string><string name="social_t1_q11_a3">Salvaxe</string><string name="social_t1_q11_a4">Mariño</string>
+    <string name="social_t1_q12_text">Que paisaxe ten máis natureza?</string>
+    <string name="social_t1_q12_a1">Natural</string><string name="social_t1_q12_a2">Industrial</string><string name="social_t1_q12_a3">Urbano</string><string name="social_t1_q12_a4">Artificial</string>
+    <string name="social_t1_q13_text">Que elemento pertence ao relevo?</string>
+    <string name="social_t1_q13_a1">Meseta</string><string name="social_t1_q13_a2">Semáforo</string><string name="social_t1_q13_a3">Casa</string><string name="social_t1_q13_a4">Coche</string>
+    <string name="social_t1_q14_text">Que é unha depresión?</string>
+    <string name="social_t1_q14_a1">Zona máis baixa do terreo</string><string name="social_t1_q14_a2">Unha montaña alta</string><string name="social_t1_q14_a3">Unha illa</string><string name="social_t1_q14_a4">Un cabo</string>
+    <string name="social_t1_q15_text">Que é un cabo?</string>
+    <string name="social_t1_q15_a1">Terra que entra no mar</string><string name="social_t1_q15_a2">Un río</string><string name="social_t1_q15_a3">Un monte</string><string name="social_t1_q15_a4">Un lago</string>
+    <string name="social_t1_q16_text">Que paisaxe aparece preto do mar?</string>
+    <string name="social_t1_q16_a1">De costa</string><string name="social_t1_q16_a2">De montaña</string><string name="social_t1_q16_a3">De interior</string><string name="social_t1_q16_a4">Industrial</string>
+    <string name="social_t1_q17_text">Que elemento é auga na paisaxe?</string>
+    <string name="social_t1_q17_a1">Río</string><string name="social_t1_q17_a2">Val</string><string name="social_t1_q17_a3">Serra</string><string name="social_t1_q17_a4">Meseta</string>
+    <string name="social_t1_q18_text">Que elemento indica vexetación?</string>
+    <string name="social_t1_q18_a1">Árbores</string><string name="social_t1_q18_a2">Estradas</string><string name="social_t1_q18_a3">Edificios</string><string name="social_t1_q18_a4">Pontes</string>
+    <string name="social_t1_q19_text">Que parte da paisaxe mostra casas e cidades?</string>
+    <string name="social_t1_q19_a1">Construcións</string><string name="social_t1_q19_a2">Relevo</string><string name="social_t1_q19_a3">Augas</string><string name="social_t1_q19_a4">Vexetación</string>
+    <string name="social_t1_q20_text">Que tipo de paisaxe ten vales e montañas?</string>
+    <string name="social_t1_q20_a1">De montaña</string><string name="social_t1_q20_a2">De costa</string><string name="social_t1_q20_a3">De cidade</string><string name="social_t1_q20_a4">Industrial</string>
+
+    <string name="splash_title">AprenFun!!</string>
+</resources>

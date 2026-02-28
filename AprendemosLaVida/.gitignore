@@ -1,0 +1,29 @@
+# Android/Gradle
+.gradle/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Local SDK path (machine-specific)
+local.properties
+
+# IntelliJ/Android Studio
+.idea/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# NDK/CMake
+.externalNativeBuild/
+.cxx/
+
+# Logs
+*.log
+
+# Keystore/signing files
+*.jks
+*.keystore
+
+# Misc
+captures/
