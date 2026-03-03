@@ -10,6 +10,9 @@
     <string name="mode_math">Matemáticas ✖️</string>
     <string name="mode_english">Inglés 🇬🇧</string>
     <string name="mode_social">C. Sociais 🌍</string>
+    <string name="game_type_title">Tipo de xogo</string>
+    <string name="game_type_questions">MODO PREGUNTAS</string>
+    <string name="game_type_story">MODO HISTORIA</string>
     <string name="social_theme_0">Tema 0. Sistema Solar</string>
     <string name="social_theme_1">Tema 1. Paisaxe</string>
 
@@ -71,6 +74,7 @@
     <string name="scores_title_math">Puntuacións Matemáticas ✖️</string>
     <string name="scores_title_english">Puntuacións Inglés 🇬🇧</string>
     <string name="scores_title_social">Puntuacións C. Sociais 🌍</string>
+    <string name="scores_title_story">Puntuacións Modo Historia 🗺️</string>
     <string name="scores_empty">Aínda non hai puntuacións</string>
     <string name="score_item_format">%1$d. %2$s - %3$d pts - %4$s</string>
     <string name="scores_clear_title">Borrar puntuacións</string>
@@ -185,4 +189,15 @@
     <string name="social_t1_q20_a1">De montaña</string><string name="social_t1_q20_a2">De costa</string><string name="social_t1_q20_a3">De cidade</string><string name="social_t1_q20_a4">Industrial</string>
 
     <string name="splash_title">AprenFun!!</string>
+
+    <string name="story_score_default">Puntos: 0</string>
+    <string name="story_score_format">Puntos: %1$d</string>
+    <string name="story_checkpoints_default">Checkpoints: 0/5</string>
+    <string name="story_checkpoints_format">Checkpoints: %1$d/%2$d</string>
+    <string name="story_checkpoint_title">Checkpoint bloqueado</string>
+    <string name="story_wrong_penalty">Erro: -25 puntos</string>
+    <string name="story_correct_points_format">Correcto! +%1$d puntos</string>
+    <string name="story_need_all_checkpoints">Debes desbloquear todos os checkpoints</string>
+    <string name="story_completed">Completaches o modo historia!</string>
+    <string name="story_final_score_format">Puntuación final: %1$d</string>
 </resources>

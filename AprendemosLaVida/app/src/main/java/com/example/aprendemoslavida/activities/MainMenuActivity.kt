@@ -15,12 +15,7 @@ class MainMenuActivity : BaseActivity() {
         setContentView(binding.root)
 
         binding.playButton.setOnClickListener {
-            startActivity(
-                Intent(this, GameModeActivity::class.java).putExtra(
-                    GameModeActivity.EXTRA_ACTION,
-                    GameModeActivity.ACTION_PLAY
-                )
-            )
+            startActivity(Intent(this, GameTypeMenuActivity::class.java))
         }
 
         binding.howToPlayButton.setOnClickListener {

@@ -48,6 +48,7 @@ class ResultActivity : BaseActivity() {
                     SocialGameActivity.EXTRA_TOPIC,
                     socialTopic
                 )
+                ScoreManager.MODE_STORY -> Intent(this, StoryGameActivity::class.java)
                 else -> Intent(this, GameActivity::class.java)
             }
             startActivity(replayIntent)

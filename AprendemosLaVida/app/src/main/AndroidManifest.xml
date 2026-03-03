@@ -13,6 +13,14 @@
             android:exported="false"
             android:screenOrientation="portrait" />
         <activity
+            android:name=".activities.StoryGameActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".activities.GameTypeMenuActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
             android:name=".activities.AddSubMathGameActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
