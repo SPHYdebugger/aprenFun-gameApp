@@ -7,6 +7,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
+import android.graphics.Rect
 import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.View
@@ -55,6 +56,11 @@ class StoryGameView @JvmOverloads constructor(
     private val gateOpenPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#6BBE5A") }
     private val exitPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#F2C94C") }
     private val playerFallbackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#3866D8") }
+    private val tilesetTileSizePx = 32
+    private val tilesetColumns = 4
+    private val tilesetBitmap: Bitmap? = buildForestTileset(tilesetTileSizePx)
+    private val tileSourceMap: Map<StoryMap.TileType, Rect> = buildTileSourceMap(tilesetTileSizePx)
+    private val trophyBitmap: Bitmap = buildTrophyBitmap(24)
 
     private val fallbackPlayerBitmap: Bitmap? = BitmapFactory.decodeResource(
         resources,
@@ -64,14 +70,21 @@ class StoryGameView @JvmOverloads constructor(
     private var playerDownBitmap: Bitmap? = null
     private var playerLeftBitmap: Bitmap? = null
     private var playerRightBitmap: Bitmap? = null
+    private var playerTilesetBitmap: Bitmap? = null
+    private var playerTilesetTileSize: Int = 0
+    private val playerFrameCount = 4
+    private val playerAnimFrameMs = 140L
+    private var playerAnimTimeMs = 0L
+    private var playerAnimFrame = 0
+    private var playerMoving = false
     private var facing: Facing = Facing.DOWN
 
     private var playerCenterX = storyMap.startTileX
     private var playerCenterY = storyMap.startTileY
     private val playerHalfSize = 0.35f
     private val movementTilesPerSecond = 2.8f
-    private val cameraVisibleTilesX = 8f
-    private val cameraVisibleTilesY = 8f
+    private val cameraVisibleTilesX = 4.5f
+    private val cameraVisibleTilesY = 4.5f
 
     init {
         loadDirectionalSprites()
@@ -107,6 +120,11 @@ class StoryGameView @JvmOverloads constructor(
         playerCenterX = storyMap.startTileX
         playerCenterY = storyMap.startTileY
         exitNotified = false
+        invalidate()
+    }
+
+    fun randomizeSecretEntrance() {
+        storyMap.randomizeSecretEntrance()
         invalidate()
     }
 
@@ -147,14 +165,27 @@ class StoryGameView @JvmOverloads constructor(
         val maxTileX = ceil(cameraX + halfViewTilesX).toInt() + 1
         val minTileY = floor(cameraY - halfViewTilesY).toInt() - 1
         val maxTileY = ceil(cameraY + halfViewTilesY).toInt() + 1
+        val activeHiddenZone = storyMap.hiddenZoneAtPoint(playerCenterX, playerCenterY)
 
         for (y in minTileY..maxTileY) {
             for (x in minTileX..maxTileX) {
                 val left = ((x - cameraX) * tileSize) + (width / 2f)
                 val top = ((y - cameraY) * tileSize) + (height / 2f)
                 val rect = RectF(left, top, left + tileSize, top + tileSize)
-                val paint = if (storyMap.isWalkable(x, y)) floorPaint else wallPaint
-                canvas.drawRect(rect, paint)
+                val tileZone = storyMap.hiddenZoneAtTile(x, y)
+                val tileType = if (tileZone >= 0 && tileZone != activeHiddenZone) {
+                    StoryMap.TileType.TREE
+                } else {
+                    storyMap.tileTypeAt(x, y)
+                }
+                val tileset = tilesetBitmap
+                val src = tileSourceMap[tileType]
+                if (tileset != null && src != null) {
+                    canvas.drawBitmap(tileset, src, rect, null)
+                } else {
+                    val paint = if (storyMap.isWalkable(x, y)) floorPaint else wallPaint
+                    canvas.drawRect(rect, paint)
+                }
             }
         }
 
@@ -162,8 +193,12 @@ class StoryGameView @JvmOverloads constructor(
         canvas.drawRect(exitRectPx, exitPaint)
 
         gates.forEach { gate ->
+            val gateZone = storyMap.hiddenZoneAtPoint(gate.rect.centerX(), gate.rect.centerY())
+            if (gateZone >= 0 && gateZone != activeHiddenZone) return@forEach
             val rect = toScreenRect(gate.rect, tileSize, cameraX, cameraY)
-            canvas.drawRect(rect, if (gate.unlocked) gateOpenPaint else gateLockedPaint)
+            if (!gate.unlocked) {
+                drawTrophy(canvas, rect)
+            }
         }
 
         val playerRectPx = RectF(
@@ -173,12 +208,7 @@ class StoryGameView @JvmOverloads constructor(
             ((playerCenterY + playerHalfSize - cameraY) * tileSize) + (height / 2f)
         )
 
-        val playerBitmap = currentPlayerBitmap()
-        if (playerBitmap != null) {
-            canvas.drawBitmap(playerBitmap, null, playerRectPx, null)
-        } else {
-            canvas.drawOval(playerRectPx, playerFallbackPaint)
-        }
+        drawPlayer(canvas, playerRectPx)
     }
 
     private val frameRunnable = object : Runnable {
@@ -199,10 +229,12 @@ class StoryGameView @JvmOverloads constructor(
         if (!interactionLocked) {
             val vector = movementVector()
             if (vector.first != 0f || vector.second != 0f) {
+                updateAnimation(deltaSec, moving = true)
                 updateFacing(vector.first, vector.second)
                 val distance = movementTilesPerSecond * deltaSec
                 tryMove(vector.first * distance, vector.second * distance)
             } else {
+                updateAnimation(deltaSec, moving = false)
                 lastBlockedGateId = null
             }
         }
@@ -242,26 +274,32 @@ class StoryGameView @JvmOverloads constructor(
         var moved = false
 
         if (deltaX != 0f) {
+            val candidateCenterX = playerCenterX + deltaX
+            val candidateCenterY = playerCenterY
+            val activeZone = effectiveHiddenZoneForMove(candidateCenterX, candidateCenterY)
             val candidate = RectF(
                 playerCenterX + deltaX - playerHalfSize,
                 playerCenterY - playerHalfSize,
                 playerCenterX + deltaX + playerHalfSize,
                 playerCenterY + playerHalfSize
             )
-            if (!storyMap.collidesWithWall(candidate) && !isBlockedByGate(candidate)) {
+            if (!storyMap.collidesWithWall(candidate, activeZone) && !isBlockedByGate(candidate)) {
                 playerCenterX += deltaX
                 moved = true
             }
         }
 
         if (deltaY != 0f) {
+            val candidateCenterX = playerCenterX
+            val candidateCenterY = playerCenterY + deltaY
+            val activeZone = effectiveHiddenZoneForMove(candidateCenterX, candidateCenterY)
             val candidate = RectF(
                 playerCenterX - playerHalfSize,
                 playerCenterY + deltaY - playerHalfSize,
                 playerCenterX + playerHalfSize,
                 playerCenterY + deltaY + playerHalfSize
             )
-            if (!storyMap.collidesWithWall(candidate) && !isBlockedByGate(candidate)) {
+            if (!storyMap.collidesWithWall(candidate, activeZone) && !isBlockedByGate(candidate)) {
                 playerCenterY += deltaY
                 moved = true
             }
@@ -272,8 +310,18 @@ class StoryGameView @JvmOverloads constructor(
         }
     }
 
+    private fun effectiveHiddenZoneForMove(candidateCenterX: Float, candidateCenterY: Float): Int {
+        val currentZone = storyMap.hiddenZoneAtPoint(playerCenterX, playerCenterY)
+        if (currentZone >= 0) return currentZone
+        return storyMap.hiddenZoneAtPoint(candidateCenterX, candidateCenterY)
+    }
+
     private fun isBlockedByGate(playerRect: RectF): Boolean {
-        val blockingGate = gates.firstOrNull { !it.unlocked && RectF(playerRect).intersect(it.rect) }
+        val blockingGate = gates.firstOrNull { gate ->
+            if (gate.unlocked) return@firstOrNull false
+            val hitRect = gateHitRect(gate)
+            RectF(playerRect).intersect(hitRect)
+        }
         if (blockingGate != null) {
             if (lastBlockedGateId != blockingGate.id) {
                 lastBlockedGateId = blockingGate.id
@@ -282,6 +330,16 @@ class StoryGameView @JvmOverloads constructor(
             return true
         }
         return false
+    }
+
+    private fun gateHitRect(gate: StoryGate): RectF {
+        val inset = 0.2f
+        val rect = RectF(gate.rect)
+        rect.inset(inset, inset)
+        if (rect.width() <= 0f || rect.height() <= 0f) {
+            return RectF(gate.rect)
+        }
+        return rect
     }
 
     private fun toScreenRect(worldRect: RectF, tileSize: Float, cameraX: Float, cameraY: Float): RectF {
@@ -311,6 +369,23 @@ class StoryGameView @JvmOverloads constructor(
     }
 
     private fun loadDirectionalSprites() {
+        // Option 0: full tileset in a 4x4 grid (rows: up, right, down, left).
+        val sheet = loadBitmapByName("story_player_sheet")
+        if (sheet != null && sheet.width >= playerFrameCount && sheet.height >= 4) {
+            playerTilesetBitmap = sheet
+            playerTilesetTileSize = sheet.width / playerFrameCount
+            return
+        }
+
+        // Option 0b: generate a tileset from a base sprite named story_player_base.
+        val base = loadBitmapByName("story_player_base")
+        if (base != null) {
+            val generated = buildPlayerTileset(base, playerFrameCount)
+            playerTilesetBitmap = generated.first
+            playerTilesetTileSize = generated.second
+            return
+        }
+
         // Option 0: single frontal sprite reused for all directions.
         val front = loadBitmapByName("story_player_front")
         if (front != null) {
@@ -353,6 +428,269 @@ class StoryGameView @JvmOverloads constructor(
                 true
             )
         }
+    }
+
+    private fun updateAnimation(deltaSec: Float, moving: Boolean) {
+        if (!moving) {
+            playerMoving = false
+            playerAnimTimeMs = 0L
+            playerAnimFrame = 0
+            return
+        }
+
+        val deltaMs = (deltaSec * 1000f).toLong().coerceAtLeast(0L)
+        playerMoving = true
+        playerAnimTimeMs += deltaMs
+        if (playerAnimTimeMs >= playerAnimFrameMs * playerFrameCount) {
+            playerAnimTimeMs %= (playerAnimFrameMs * playerFrameCount)
+        }
+        playerAnimFrame = (playerAnimTimeMs / playerAnimFrameMs).toInt().coerceIn(0, playerFrameCount - 1)
+    }
+
+    private fun drawPlayer(canvas: Canvas, dst: RectF) {
+        val tileset = playerTilesetBitmap
+        if (tileset != null && playerTilesetTileSize > 0) {
+            val src = currentPlayerFrameRect()
+            if (src != null) {
+                canvas.drawBitmap(tileset, src, dst, null)
+                return
+            }
+        }
+
+        val playerBitmap = currentPlayerBitmap()
+        if (playerBitmap != null) {
+            canvas.drawBitmap(playerBitmap, null, dst, null)
+        } else {
+            canvas.drawOval(dst, playerFallbackPaint)
+        }
+    }
+
+    private fun currentPlayerFrameRect(): Rect? {
+        val tileset = playerTilesetBitmap ?: return null
+        val tile = playerTilesetTileSize
+        if (tile <= 0) return null
+        val row = when (facing) {
+            Facing.UP -> 0
+            Facing.RIGHT -> 1
+            Facing.DOWN -> 2
+            Facing.LEFT -> 3
+        }
+        val col = if (playerMoving) playerAnimFrame else 0
+        val left = col * tile
+        val top = row * tile
+        if (left + tile > tileset.width || top + tile > tileset.height) return null
+        return Rect(left, top, left + tile, top + tile)
+    }
+
+    private fun buildPlayerTileset(base: Bitmap, frames: Int): Pair<Bitmap, Int> {
+        val tileSize = maxOf(base.width, base.height)
+        val rows = 4
+        val bitmap = Bitmap.createBitmap(tileSize * frames, tileSize * rows, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+
+        fun drawFrame(
+            targetCol: Int,
+            targetRow: Int,
+            offsetX: Float,
+            offsetY: Float,
+            mirror: Boolean
+        ) {
+            val left = targetCol * tileSize
+            val top = targetRow * tileSize
+            val dstLeft = left + (tileSize - base.width) / 2f + offsetX
+            val dstTop = top + (tileSize - base.height) / 2f + offsetY
+            val dst = RectF(dstLeft, dstTop, dstLeft + base.width, dstTop + base.height)
+
+            if (mirror) {
+                val matrix = Matrix()
+                matrix.postScale(-1f, 1f, base.width / 2f, base.height / 2f)
+                val mirrored = Bitmap.createBitmap(base, 0, 0, base.width, base.height, matrix, true)
+                canvas.drawBitmap(mirrored, null, dst, paint)
+            } else {
+                canvas.drawBitmap(base, null, dst, paint)
+            }
+        }
+
+        val offsetsY = listOf(0f, -1.5f, 0f, 1.5f)
+        for (frame in 0 until frames) {
+            val offsetY = offsetsY[frame % offsetsY.size]
+            drawFrame(frame, 2, 0f, offsetY, mirror = false) // down
+            drawFrame(frame, 0, 0f, offsetY, mirror = false) // up
+            drawFrame(frame, 1, 0.5f, offsetY, mirror = false) // right
+            drawFrame(frame, 3, -0.5f, offsetY, mirror = true) // left
+        }
+
+        return bitmap to tileSize
+    }
+
+    private fun buildTileSourceMap(tileSize: Int): Map<StoryMap.TileType, Rect> {
+        val orderedTypes = listOf(
+            StoryMap.TileType.DIRT,
+            StoryMap.TileType.GRASS,
+            StoryMap.TileType.TREE,
+            StoryMap.TileType.ROCK
+        )
+        val map = HashMap<StoryMap.TileType, Rect>(orderedTypes.size)
+        orderedTypes.forEachIndexed { index, type ->
+            val col = index % tilesetColumns
+            val row = index / tilesetColumns
+            map[type] = Rect(
+                col * tileSize,
+                row * tileSize,
+                (col + 1) * tileSize,
+                (row + 1) * tileSize
+            )
+        }
+        return map
+    }
+
+    private fun buildForestTileset(tileSize: Int): Bitmap? {
+        if (tileSize <= 0) return null
+        val rows = 1
+        val bitmap = Bitmap.createBitmap(tileSize * tilesetColumns, tileSize * rows, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val paint = Paint().apply { isAntiAlias = false }
+
+        fun tileRect(index: Int): Rect {
+            val col = index % tilesetColumns
+            val row = index / tilesetColumns
+            return Rect(col * tileSize, row * tileSize, (col + 1) * tileSize, (row + 1) * tileSize)
+        }
+
+        // DIRT
+        run {
+            val rect = tileRect(0)
+            paint.color = Color.parseColor("#C6A26E")
+            canvas.drawRect(rect, paint)
+            paint.color = Color.parseColor("#B28C5C")
+            for (i in 0 until 20) {
+                val x = rect.left + (i * 7 % tileSize)
+                val y = rect.top + (i * 13 % tileSize)
+                canvas.drawRect(x.toFloat(), y.toFloat(), (x + 2).toFloat(), (y + 2).toFloat(), paint)
+            }
+        }
+
+        // GRASS
+        run {
+            val rect = tileRect(1)
+            paint.color = Color.parseColor("#5FAE68")
+            canvas.drawRect(rect, paint)
+            paint.color = Color.parseColor("#4A9A55")
+            for (i in 0 until 24) {
+                val x = rect.left + (i * 5 % tileSize)
+                val y = rect.top + (i * 11 % tileSize)
+                canvas.drawRect(x.toFloat(), y.toFloat(), (x + 1).toFloat(), (y + 3).toFloat(), paint)
+            }
+        }
+
+        // TREE
+        run {
+            val rect = tileRect(2)
+            paint.color = Color.parseColor("#2E6A35")
+            canvas.drawRect(rect, paint)
+            paint.color = Color.parseColor("#244F2A")
+            canvas.drawRect(
+                rect.left + tileSize * 0.1f,
+                rect.top + tileSize * 0.1f,
+                rect.right - tileSize * 0.1f,
+                rect.bottom - tileSize * 0.35f,
+                paint
+            )
+            paint.color = Color.parseColor("#8B5A2B")
+            canvas.drawRect(
+                rect.left + tileSize * 0.42f,
+                rect.top + tileSize * 0.55f,
+                rect.right - tileSize * 0.42f,
+                rect.bottom - tileSize * 0.1f,
+                paint
+            )
+        }
+
+        // ROCK
+        run {
+            val rect = tileRect(3)
+            paint.color = Color.parseColor("#C6A26E")
+            canvas.drawRect(rect, paint)
+            paint.color = Color.parseColor("#8E9399")
+            canvas.drawOval(
+                rect.left + tileSize * 0.25f,
+                rect.top + tileSize * 0.45f,
+                rect.right - tileSize * 0.2f,
+                rect.bottom - tileSize * 0.15f,
+                paint
+            )
+            paint.color = Color.parseColor("#A7ADB3")
+            canvas.drawOval(
+                rect.left + tileSize * 0.35f,
+                rect.top + tileSize * 0.55f,
+                rect.right - tileSize * 0.35f,
+                rect.bottom - tileSize * 0.25f,
+                paint
+            )
+        }
+
+        return bitmap
+    }
+
+    private fun buildTrophyBitmap(sizePx: Int): Bitmap {
+        val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        val gold = Color.parseColor("#F2C94C")
+        val darkGold = Color.parseColor("#C9A33A")
+        val base = Color.parseColor("#8C6B2A")
+
+        paint.color = gold
+        canvas.drawRect(
+            sizePx * 0.28f,
+            sizePx * 0.2f,
+            sizePx * 0.72f,
+            sizePx * 0.55f,
+            paint
+        )
+        canvas.drawOval(
+            sizePx * 0.18f,
+            sizePx * 0.25f,
+            sizePx * 0.35f,
+            sizePx * 0.45f,
+            paint
+        )
+        canvas.drawOval(
+            sizePx * 0.65f,
+            sizePx * 0.25f,
+            sizePx * 0.82f,
+            sizePx * 0.45f,
+            paint
+        )
+
+        paint.color = darkGold
+        canvas.drawRect(
+            sizePx * 0.45f,
+            sizePx * 0.55f,
+            sizePx * 0.55f,
+            sizePx * 0.7f,
+            paint
+        )
+
+        paint.color = base
+        canvas.drawRect(
+            sizePx * 0.3f,
+            sizePx * 0.72f,
+            sizePx * 0.7f,
+            sizePx * 0.85f,
+            paint
+        )
+
+        return bitmap
+    }
+
+    private fun drawTrophy(canvas: Canvas, rect: RectF) {
+        val size = min(rect.width(), rect.height()) * 0.75f
+        val left = rect.centerX() - size / 2f
+        val top = rect.centerY() - size / 2f
+        val dst = RectF(left, top, left + size, top + size)
+        canvas.drawBitmap(trophyBitmap, null, dst, null)
     }
 
     private fun loadBitmapByName(name: String): Bitmap? {

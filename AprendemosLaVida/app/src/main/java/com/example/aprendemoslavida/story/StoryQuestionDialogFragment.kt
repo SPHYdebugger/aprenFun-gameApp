@@ -51,8 +51,15 @@ class StoryQuestionDialogFragment : DialogFragment() {
             container.addView(button, params)
         }
 
+        val titleView = TextView(requireContext()).apply {
+            text = getString(com.example.aprendemoslavida.R.string.story_checkpoint_title)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 20f)
+            setTextColor(requireContext().getColor(com.example.aprendemoslavida.R.color.text_primary))
+            setPadding((20 * density).toInt(), (16 * density).toInt(), (20 * density).toInt(), (4 * density).toInt())
+        }
+
         return MaterialAlertDialogBuilder(requireContext())
-            .setTitle(com.example.aprendemoslavida.R.string.story_checkpoint_title)
+            .setCustomTitle(titleView)
             .setView(container)
             .create()
     }

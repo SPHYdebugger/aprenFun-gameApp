@@ -7,5 +7,6 @@ data class StoryGate(
     val id: Int,
     val topic: StoryTopic,
     val rect: RectF,
-    var unlocked: Boolean = false
+    var unlocked: Boolean = false,
+    val optional: Boolean = false
 )

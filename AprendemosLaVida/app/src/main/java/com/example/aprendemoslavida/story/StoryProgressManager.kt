@@ -33,6 +33,33 @@ class StoryProgressManager(private val questionProvider: StoryQuestionProvider) 
             id = 4,
             topic = StoryTopic.SOCIAL,
             rect = RectF(4f, 7f, 5f, 8f)
+        ),
+        StoryGate(
+            id = 5,
+            topic = StoryTopic.NATURAL,
+            rect = RectF(9f, 6f, 10f, 7f),
+            optional = true
+        ),
+        StoryGate(
+            id = 6,
+            topic = StoryTopic.MATH_ADD_SUB,
+            rect = RectF(16f, 4f, 17f, 5f)
+        ),
+        StoryGate(
+            id = 7,
+            topic = StoryTopic.ENGLISH,
+            rect = RectF(10f, 8f, 11f, 9f)
+        ),
+        StoryGate(
+            id = 8,
+            topic = StoryTopic.SOCIAL,
+            rect = RectF(7f, 11f, 8f, 12f)
+        ),
+        StoryGate(
+            id = 9,
+            topic = StoryTopic.NATURAL,
+            rect = RectF(15f, 13f, 16f, 14f),
+            optional = true
         )
     )
 
@@ -59,6 +86,12 @@ class StoryProgressManager(private val questionProvider: StoryQuestionProvider) 
         gateQuestions.remove(gateId)
         gateStartTimeMs.remove(gateId)
     }
+
+    fun requiredGateCount(): Int = gates.count { !it.optional }
+
+    fun unlockedRequiredGates(): Int = gates.count { !it.optional && it.unlocked }
+
+    fun requiredGatesUnlocked(): Boolean = gates.all { it.optional || it.unlocked }
 
     fun allGatesUnlocked(): Boolean = gates.all { it.unlocked }
 }

@@ -11,6 +11,8 @@ import androidx.appcompat.app.AlertDialog
 import com.example.aprendemoslavida.R
 import com.example.aprendemoslavida.databinding.ActivityGameBinding
 import com.example.aprendemoslavida.utils.MathGameManager
+import com.example.aprendemoslavida.utils.QuestionScoring
+import com.example.aprendemoslavida.utils.SettingsManager
 
 class MathGameActivity : BaseActivity() {
     private lateinit var binding: ActivityGameBinding
@@ -25,7 +27,7 @@ class MathGameActivity : BaseActivity() {
     private var currentAnswer: Int = 1
     private var exitDialogShowing: Boolean = false
 
-    private val questionTimeMs = 12000
+    private var questionTimeMs = 12000
     private val answerFeedbackMs = 2000L
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,6 +42,7 @@ class MathGameActivity : BaseActivity() {
         binding.backButton.setOnClickListener { showExitDialog() }
         defaultAnswerTint = binding.answer1.backgroundTintList
 
+        questionTimeMs = SettingsManager.getQuestionTimeMs(this)
         showQuestion(resetTimer = true)
     }
 
@@ -105,7 +108,7 @@ class MathGameActivity : BaseActivity() {
         if (correct) {
             val elapsed = questionTimeMs - timeLeftMs
             gameManager.addTime(elapsed)
-            val points = gameManager.pointsForElapsed(elapsed)
+            val points = QuestionScoring.pointsForElapsed(elapsed, questionTimeMs)
             gameManager.addScore(points)
             showPoints(getString(R.string.points_correct_format, points))
             tone.startTone(ToneGenerator.TONE_PROP_BEEP, 150)

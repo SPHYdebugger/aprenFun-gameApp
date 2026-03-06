@@ -7,44 +7,53 @@ import com.example.aprendemoslavida.utils.EnglishGameManager
 import com.example.aprendemoslavida.utils.GameManager
 import com.example.aprendemoslavida.utils.MathGameManager
 import com.example.aprendemoslavida.utils.SocialGameManager
-import kotlin.random.Random
 
 // Adapter that reuses existing quiz managers to provide one question per checkpoint.
 class StoryQuestionProvider(private val context: Context) {
+    private val pools = HashMap<StoryTopic, MutableList<StoryQuestion>>()
+    private val poolIndices = HashMap<StoryTopic, Int>()
+
     fun nextQuestion(topic: StoryTopic): StoryQuestion {
-        return when (topic) {
-            StoryTopic.NATURAL -> fromClassicQuestion(GameManager(context).currentQuestion())
-            StoryTopic.MATH_MULTIPLICATION -> {
-                val q = MathGameManager().currentQuestion()
-                StoryQuestion(
-                    text = context.getString(com.example.aprendemoslavida.R.string.math_question_format, q?.a ?: 2, q?.b ?: 2),
-                    options = (q?.options ?: listOf(4, 5, 6, 7)).map { it.toString() },
-                    correctIndex = q?.correctIndex ?: 0
-                )
-            }
-            StoryTopic.MATH_ADD_SUB -> {
-                val q = AddSubMathGameManager(context).currentQuestion()
-                StoryQuestion(
-                    text = q?.expression ?: context.getString(
-                        com.example.aprendemoslavida.R.string.math_add_sub_question_format,
-                        3,
-                        "+",
-                        3
-                    ),
-                    options = (q?.options ?: listOf(6, 5, 7, 8)).map { it.toString() },
-                    correctIndex = q?.correctIndex ?: 0
-                )
-            }
-            StoryTopic.ENGLISH -> fromClassicQuestion(EnglishGameManager(context).currentQuestion())
-            StoryTopic.SOCIAL -> {
-                val topicId = if (Random.nextBoolean()) {
-                    SocialGameManager.TOPIC_SOLAR_SYSTEM
-                } else {
-                    SocialGameManager.TOPIC_LANDSCAPE
-                }
-                fromClassicQuestion(SocialGameManager(context, topicId).currentQuestion())
-            }
+        val pool = pools.getOrPut(topic) { buildPool(topic) }
+        val index = poolIndices[topic] ?: 0
+        if (pool.isEmpty() || index >= pool.size) {
+            pools[topic] = buildPool(topic)
+            poolIndices[topic] = 0
         }
+
+        val refreshedPool = pools[topic] ?: buildPool(topic).also { pools[topic] = it }
+        val safeIndex = poolIndices[topic] ?: 0
+        val question = refreshedPool[safeIndex]
+        poolIndices[topic] = safeIndex + 1
+        return question
+    }
+
+    private fun buildPool(topic: StoryTopic): MutableList<StoryQuestion> {
+        val questions = when (topic) {
+            StoryTopic.NATURAL -> GameManager.loadAllQuestions(context).map { fromClassicQuestion(it) }
+            StoryTopic.MATH_MULTIPLICATION -> MathGameManager.allQuestions().map { q ->
+                StoryQuestion(
+                    text = context.getString(
+                        com.example.aprendemoslavida.R.string.math_question_format,
+                        q.a,
+                        q.b
+                    ),
+                    options = q.options.map { it.toString() },
+                    correctIndex = q.correctIndex
+                )
+            }
+            StoryTopic.MATH_ADD_SUB -> AddSubMathGameManager.allQuestions(context).map { q ->
+                StoryQuestion(
+                    text = q.expression,
+                    options = q.options.map { it.toString() },
+                    correctIndex = q.correctIndex
+                )
+            }
+            StoryTopic.ENGLISH -> EnglishGameManager.allQuestions(context).map { fromClassicQuestion(it) }
+            StoryTopic.SOCIAL -> SocialGameManager.allQuestions(context).map { fromClassicQuestion(it) }
+        }.shuffled()
+
+        return questions.toMutableList()
     }
 
     private fun fromClassicQuestion(question: Question?): StoryQuestion {

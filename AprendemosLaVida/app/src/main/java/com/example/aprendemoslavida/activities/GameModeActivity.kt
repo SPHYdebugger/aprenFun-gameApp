@@ -2,6 +2,7 @@ package com.example.aprendemoslavida.activities
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import com.example.aprendemoslavida.databinding.ActivityGameModeBinding
 
 class GameModeActivity : BaseActivity() {
@@ -64,6 +65,20 @@ class GameModeActivity : BaseActivity() {
             } else {
                 startActivity(Intent(this, SocialTopicsActivity::class.java))
             }
+        }
+
+        if (action == ACTION_SCORES) {
+            binding.storyButton.visibility = View.VISIBLE
+            binding.storyButton.setOnClickListener {
+                startActivity(
+                    Intent(this, ScoresActivity::class.java).putExtra(
+                        ScoresActivity.EXTRA_SCORE_MODE,
+                        com.example.aprendemoslavida.utils.ScoreManager.MODE_STORY
+                    )
+                )
+            }
+        } else {
+            binding.storyButton.visibility = View.GONE
         }
 
         binding.backButton.setOnClickListener { finish() }

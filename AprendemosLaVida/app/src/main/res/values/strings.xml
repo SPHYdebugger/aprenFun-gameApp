@@ -10,6 +10,7 @@
     <string name="mode_math">Matemáticas ✖️</string>
     <string name="mode_english">Inglés 🇬🇧</string>
     <string name="mode_social">C. Sociales 🌍</string>
+    <string name="mode_story">Modo historia 🗺️</string>
     <string name="game_type_title">Tipo de juego</string>
     <string name="game_type_questions">MODO PREGUNTAS</string>
     <string name="game_type_story">MODO HISTORIA</string>
@@ -18,6 +19,13 @@
 
     <string name="settings_title">Ajustes</string>
     <string name="change_language">Cambiar idioma</string>
+    <string name="change_language_to_galician">Cambiar a galego</string>
+    <string name="change_language_to_spanish">Cambiar a español</string>
+    <string name="question_time_button_placeholder">Tiempo de respuesta</string>
+    <string name="question_time_button_format">Tiempo de respuesta: %1$ds</string>
+    <string name="question_time_dialog_title">Tiempo para responder</string>
+    <string name="question_time_option_format">%1$ds</string>
+    <string name="cancel_button">Cancelar</string>
     <string name="exit_app">Salir</string>
     <string name="exit_confirm_title">Salir</string>
     <string name="exit_confirm_message">¿Quieres cerrar la app?</string>
@@ -194,10 +202,17 @@
     <string name="story_score_format">Puntos: %1$d</string>
     <string name="story_checkpoints_default">Checkpoints: 0/5</string>
     <string name="story_checkpoints_format">Checkpoints: %1$d/%2$d</string>
-    <string name="story_checkpoint_title">Checkpoint bloqueado</string>
+    <string name="story_time_default">Tiempo: 05:00</string>
+    <string name="story_time_format">Tiempo: %1$02d:%2$02d</string>
+    <string name="story_checkpoint_title">Trofeo encontrado</string>
     <string name="story_wrong_penalty">Fallo: -25 puntos</string>
     <string name="story_correct_points_format">¡Correcto! +%1$d puntos</string>
     <string name="story_need_all_checkpoints">Debes desbloquear todos los checkpoints</string>
     <string name="story_completed">¡Has completado el modo historia!</string>
     <string name="story_final_score_format">Puntuación final: %1$d</string>
+    <string name="story_trophies_label">Trofeos obtenidos:</string>
+    <string name="story_time_warning">Tu tiempo se acaba, llega cuanto antes a la meta</string>
+    <string name="story_time_up_title">Tiempo agotado</string>
+    <string name="story_time_up_message">Se ha terminado el tiempo. Tu puntuación se reducirá a la mitad.</string>
+    <string name="time_warning_color">#C23B3B</string>
 </resources>

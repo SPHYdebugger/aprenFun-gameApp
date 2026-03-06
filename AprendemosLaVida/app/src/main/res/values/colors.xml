@@ -11,4 +11,5 @@
     <color name="black">#000000</color>
     <color name="answer_wrong">#FF0000</color>
     <color name="answer_correct">#66BB6A</color>
+    <color name="time_warning">#C23B3B</color>
 </resources>

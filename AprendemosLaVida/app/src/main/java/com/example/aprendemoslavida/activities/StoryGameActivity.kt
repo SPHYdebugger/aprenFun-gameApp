@@ -3,9 +3,13 @@ package com.example.aprendemoslavida.activities
 import android.content.Intent
 import android.os.Bundle
 import android.os.SystemClock
-import android.widget.Toast
+import android.view.View
+import android.view.Gravity
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
+import android.os.CountDownTimer
+import android.media.AudioManager
+import android.media.ToneGenerator
 import com.example.aprendemoslavida.R
 import com.example.aprendemoslavida.databinding.ActivityStoryGameBinding
 import com.example.aprendemoslavida.story.StoryGameView
@@ -21,6 +25,11 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     private lateinit var progressManager: StoryProgressManager
     private lateinit var questionProvider: StoryQuestionProvider
     private val scoreManager = StoryScoreManager()
+    private var countdownTimer: CountDownTimer? = null
+    private val totalTimeMs = 4 * 60 * 1000L
+    private var timeLeftMs: Long = totalTimeMs
+    private var warningShown: Boolean = false
+    private val tone = ToneGenerator(AudioManager.STREAM_MUSIC, 80)
 
     private var currentDialogGateId: Int? = null
     private var gameStartMs: Long = 0L
@@ -37,8 +46,10 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
 
         binding.storyGameView.listener = this
         binding.storyGameView.setGates(progressManager.gates)
+        binding.storyGameView.randomizeSecretEntrance()
         binding.storyGameView.resetPlayerPosition()
         updateHud()
+        startCountdown()
 
         binding.joystickView.listener = object : com.example.aprendemoslavida.story.VirtualJoystickView.Listener {
             override fun onInputChanged(x: Float, y: Float) {
@@ -64,11 +75,12 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     }
 
     override fun onExitReached() {
-        if (!progressManager.allGatesUnlocked()) {
-            Toast.makeText(this, getString(R.string.story_need_all_checkpoints), Toast.LENGTH_SHORT).show()
+        if (!progressManager.requiredGatesUnlocked()) {
+            showStoryToast(getString(R.string.story_need_all_checkpoints))
             return
         }
 
+        countdownTimer?.cancel()
         showCompletionDialog()
     }
 
@@ -79,11 +91,11 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
             val gained = scoreManager.onCorrectAnswer(elapsedMs)
             progressManager.unlockGate(gateId)
             binding.storyGameView.setGates(progressManager.gates)
-            Toast.makeText(this, getString(R.string.story_correct_points_format, gained), Toast.LENGTH_SHORT).show()
+            showStoryToast(getString(R.string.story_correct_points_format, gained))
             closeQuestionState()
         } else {
             scoreManager.onWrongAttempt()
-            Toast.makeText(this, getString(R.string.story_wrong_penalty), Toast.LENGTH_SHORT).show()
+            showStoryToast(getString(R.string.story_wrong_penalty))
             // Keep the same question and keep the gate timer running.
             binding.root.postDelayed({ showQuestionDialog(gateId) }, 120L)
         }
@@ -104,10 +116,8 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     }
 
     private fun updateHud() {
-        val unlocked = progressManager.gates.count { it.unlocked }
-        val total = progressManager.gates.size
         binding.scoreText.text = getString(R.string.story_score_format, scoreManager.score)
-        binding.progressText.text = getString(R.string.story_checkpoints_format, unlocked, total)
+        binding.timeText.text = formatTime(timeLeftMs)
     }
 
     private fun showExitDialog() {
@@ -133,10 +143,10 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(getColor(R.color.accent))
     }
 
-    private fun goToResults() {
+    private fun goToResults(finalScore: Int = scoreManager.score) {
         val totalTime = (SystemClock.elapsedRealtime() - gameStartMs).toInt()
         val intent = Intent(this, ResultActivity::class.java).apply {
-            putExtra(ResultActivity.EXTRA_SCORE, scoreManager.score)
+            putExtra(ResultActivity.EXTRA_SCORE, finalScore)
             putExtra(ResultActivity.EXTRA_TOTAL_TIME, totalTime)
             putExtra(ResultActivity.EXTRA_TOTAL_QUESTIONS, progressManager.gates.size)
             putExtra(ResultActivity.EXTRA_GAME_MODE, ScoreManager.MODE_STORY)
@@ -146,9 +156,10 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     }
 
     private fun showCompletionDialog() {
+        val trophiesView = buildTrophiesView()
         val dialog = AlertDialog.Builder(this, R.style.ThemeOverlay_Aprendemos_AlertDialog)
             .setTitle(getString(R.string.story_completed))
-            .setMessage(getString(R.string.story_final_score_format, scoreManager.score))
+            .setView(trophiesView)
             .setPositiveButton(getString(R.string.ok_button)) { _, _ ->
                 goToResults()
             }
@@ -156,5 +167,191 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
             .show()
 
         dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(getColor(R.color.primary))
+    }
+
+    private val hideStoryToastRunnable = Runnable {
+        binding.storyToast.animate().alpha(0f).setDuration(200).withEndAction {
+            binding.storyToast.visibility = View.GONE
+        }.start()
+    }
+
+    private fun showStoryToast(message: String) {
+        binding.storyToast.text = message
+        binding.storyToast.visibility = View.VISIBLE
+        binding.storyToast.alpha = 0f
+        binding.storyToast.animate().alpha(1f).setDuration(150).start()
+        binding.storyToast.removeCallbacks(hideStoryToastRunnable)
+        binding.storyToast.postDelayed(hideStoryToastRunnable, 1400L)
+    }
+
+    private fun buildTrophiesView(): android.view.View {
+        val padding = dp(16)
+        val container = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(padding, padding, padding, padding)
+        }
+
+        val message = android.widget.TextView(this).apply {
+            text = getString(R.string.story_final_score_format, scoreManager.score)
+            setTextColor(getColor(R.color.text_primary))
+        }
+
+        val label = android.widget.TextView(this).apply {
+            text = getString(R.string.story_trophies_label)
+            setTextColor(getColor(R.color.text_primary))
+            setPadding(0, dp(12), 0, dp(8))
+        }
+
+        val size = dp(28)
+        val trophies = progressManager.gates.sortedBy { it.id }
+        val rows = listOf(
+            trophies.take(5),
+            trophies.drop(5).take(5)
+        )
+
+        container.addView(message)
+        container.addView(label)
+        rows.forEach { rowTrophies ->
+            val row = android.widget.LinearLayout(this).apply {
+                orientation = android.widget.LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_HORIZONTAL
+            }
+            rowTrophies.forEach { gate ->
+                val image = android.widget.ImageView(this)
+                image.setImageBitmap(buildTrophyBitmap(size, gate.unlocked))
+                if (!gate.unlocked) {
+                    image.alpha = 0.35f
+                }
+                val params = android.widget.LinearLayout.LayoutParams(size, size)
+                params.marginEnd = dp(6)
+                image.layoutParams = params
+                row.addView(image)
+            }
+            container.addView(row)
+        }
+        return container
+    }
+
+    private fun buildTrophyBitmap(sizePx: Int, colored: Boolean): android.graphics.Bitmap {
+        val bitmap = android.graphics.Bitmap.createBitmap(sizePx, sizePx, android.graphics.Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(bitmap)
+        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+        val gold = if (colored) android.graphics.Color.parseColor("#F2C94C") else android.graphics.Color.parseColor("#B0B0B0")
+        val darkGold = if (colored) android.graphics.Color.parseColor("#C9A33A") else android.graphics.Color.parseColor("#8F8F8F")
+        val base = if (colored) android.graphics.Color.parseColor("#8C6B2A") else android.graphics.Color.parseColor("#7A7A7A")
+
+        paint.color = gold
+        canvas.drawRect(
+            sizePx * 0.28f,
+            sizePx * 0.2f,
+            sizePx * 0.72f,
+            sizePx * 0.55f,
+            paint
+        )
+        canvas.drawOval(
+            sizePx * 0.18f,
+            sizePx * 0.25f,
+            sizePx * 0.35f,
+            sizePx * 0.45f,
+            paint
+        )
+        canvas.drawOval(
+            sizePx * 0.65f,
+            sizePx * 0.25f,
+            sizePx * 0.82f,
+            sizePx * 0.45f,
+            paint
+        )
+
+        paint.color = darkGold
+        canvas.drawRect(
+            sizePx * 0.45f,
+            sizePx * 0.55f,
+            sizePx * 0.55f,
+            sizePx * 0.7f,
+            paint
+        )
+
+        paint.color = base
+        canvas.drawRect(
+            sizePx * 0.3f,
+            sizePx * 0.72f,
+            sizePx * 0.7f,
+            sizePx * 0.85f,
+            paint
+        )
+
+        return bitmap
+    }
+
+    private fun dp(value: Int): Int {
+        return (value * resources.displayMetrics.density).toInt()
+    }
+
+    private fun formatTime(ms: Long): String {
+        val totalSeconds = (ms / 1000L).toInt().coerceAtLeast(0)
+        val minutes = totalSeconds / 60
+        val seconds = totalSeconds % 60
+        return getString(R.string.story_time_format, minutes, seconds)
+    }
+
+    private fun startCountdown() {
+        countdownTimer?.cancel()
+        timeLeftMs = totalTimeMs
+        warningShown = false
+        updateHud()
+
+        countdownTimer = object : CountDownTimer(totalTimeMs, 1000L) {
+            override fun onTick(millisUntilFinished: Long) {
+                timeLeftMs = millisUntilFinished
+                if (!warningShown && timeLeftMs <= 60_000L) {
+                    warningShown = true
+                    tone.startTone(ToneGenerator.TONE_PROP_BEEP, 300)
+                    showStoryToast(getString(R.string.story_time_warning))
+                }
+                if (timeLeftMs <= 60_000L) {
+                    val seconds = (timeLeftMs / 1000L).toInt()
+                    val color = if (seconds % 2 == 0) {
+                        getColor(R.color.time_warning)
+                    } else {
+                        getColor(R.color.text_primary)
+                    }
+                    binding.timeText.setTextColor(color)
+                } else {
+                    binding.timeText.setTextColor(getColor(R.color.text_primary))
+                }
+                updateHud()
+            }
+
+            override fun onFinish() {
+                timeLeftMs = 0L
+                binding.timeText.setTextColor(getColor(R.color.text_primary))
+                updateHud()
+                onTimeUp()
+            }
+        }.start()
+    }
+
+    private fun onTimeUp() {
+        binding.storyGameView.setQuestionBlocking(true)
+        binding.joystickView.resetStick()
+        countdownTimer?.cancel()
+        val halfScore = (scoreManager.score / 2).coerceAtLeast(0)
+        val dialog = AlertDialog.Builder(this, R.style.ThemeOverlay_Aprendemos_AlertDialog)
+            .setTitle(getString(R.string.story_time_up_title))
+            .setMessage(getString(R.string.story_time_up_message))
+            .setPositiveButton(getString(R.string.ok_button)) { _, _ ->
+                goToResults(halfScore)
+            }
+            .setCancelable(false)
+            .show()
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(getColor(R.color.primary))
+    }
+
+    override fun onDestroy() {
+        countdownTimer?.cancel()
+        tone.release()
+        super.onDestroy()
     }
 }

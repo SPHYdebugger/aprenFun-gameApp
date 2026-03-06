@@ -11,7 +11,9 @@ import androidx.appcompat.app.AlertDialog
 import com.example.aprendemoslavida.R
 import com.example.aprendemoslavida.databinding.ActivityGameBinding
 import com.example.aprendemoslavida.utils.AddSubMathGameManager
+import com.example.aprendemoslavida.utils.QuestionScoring
 import com.example.aprendemoslavida.utils.ScoreManager
+import com.example.aprendemoslavida.utils.SettingsManager
 
 class AddSubMathGameActivity : BaseActivity() {
     private lateinit var binding: ActivityGameBinding
@@ -25,7 +27,7 @@ class AddSubMathGameActivity : BaseActivity() {
     private var defaultAnswerTint: ColorStateList? = null
     private var exitDialogShowing: Boolean = false
 
-    private val questionTimeMs = 12000
+    private var questionTimeMs = 12000
     private val answerFeedbackMs = 2000L
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,6 +42,7 @@ class AddSubMathGameActivity : BaseActivity() {
         binding.backButton.setOnClickListener { showExitDialog() }
         defaultAnswerTint = binding.answer1.backgroundTintList
 
+        questionTimeMs = SettingsManager.getQuestionTimeMs(this)
         showQuestion(resetTimer = true)
     }
 
@@ -94,7 +97,7 @@ class AddSubMathGameActivity : BaseActivity() {
     }
 
     private fun handleAnswer(selectedIndex: Int) {
-        val question = gameManager.currentQuestion() ?: return
+        if (gameManager.currentQuestion() == null) return
         if (exitDialogShowing) return
         timer?.cancel()
         enableAnswers(false)
@@ -103,7 +106,7 @@ class AddSubMathGameActivity : BaseActivity() {
         if (correct) {
             val elapsed = questionTimeMs - timeLeftMs
             gameManager.addTime(elapsed)
-            val points = gameManager.pointsForElapsed(elapsed)
+            val points = QuestionScoring.pointsForElapsed(elapsed, questionTimeMs)
             gameManager.addScore(points)
             showPoints(getString(R.string.points_correct_format, points))
             tone.startTone(ToneGenerator.TONE_PROP_BEEP, 150)

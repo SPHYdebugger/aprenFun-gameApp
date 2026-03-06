@@ -48,8 +48,11 @@ class EnglishGameManager(context: Context) {
         }
     }
 
-    private fun buildQuestions(context: Context): List<Question> {
-        return listOf(
+    companion object {
+        fun allQuestions(context: Context): List<Question> = buildQuestions(context)
+
+        private fun buildQuestions(context: Context): List<Question> {
+            return listOf(
             Question("What place can you watch a movie? 🎬", listOf("Cinema", "Hospital", "Post office", "Museum"), 0),
             Question("Where do firefighters work? 🚒", listOf("Fire station", "Cinema", "School", "Museum"), 0),
             Question("Where do you send letters? ✉️", listOf("Post office", "Hospital", "Cinema", "Swimming pool"), 0),
@@ -293,6 +296,7 @@ class EnglishGameManager(context: Context) {
                 ),
                 0
             )
-        )
+            )
+        }
     }
 }

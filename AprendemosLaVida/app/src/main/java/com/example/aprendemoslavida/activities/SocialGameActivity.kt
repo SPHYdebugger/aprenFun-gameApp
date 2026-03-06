@@ -10,7 +10,9 @@ import android.view.View
 import androidx.appcompat.app.AlertDialog
 import com.example.aprendemoslavida.R
 import com.example.aprendemoslavida.databinding.ActivityGameBinding
+import com.example.aprendemoslavida.utils.QuestionScoring
 import com.example.aprendemoslavida.utils.ScoreManager
+import com.example.aprendemoslavida.utils.SettingsManager
 import com.example.aprendemoslavida.utils.SocialGameManager
 
 class SocialGameActivity : BaseActivity() {
@@ -24,7 +26,7 @@ class SocialGameActivity : BaseActivity() {
     private var defaultAnswerTint: ColorStateList? = null
     private var exitDialogShowing: Boolean = false
 
-    private val questionTimeMs = 12000
+    private var questionTimeMs = 12000
     private val answerFeedbackMs = 2000L
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,6 +44,7 @@ class SocialGameActivity : BaseActivity() {
         binding.backButton.setOnClickListener { showExitDialog() }
         defaultAnswerTint = binding.answer1.backgroundTintList
 
+        questionTimeMs = SettingsManager.getQuestionTimeMs(this)
         showQuestion()
     }
 
@@ -100,7 +103,7 @@ class SocialGameActivity : BaseActivity() {
 
         val correct = selectedIndex == currentCorrectIndex
         if (correct) {
-            val points = gameManager.pointsForElapsed(elapsed)
+            val points = QuestionScoring.pointsForElapsed(elapsed, questionTimeMs)
             gameManager.addScore(points)
             gameManager.addCorrect()
             showPoints(getString(R.string.points_correct_format, points))
