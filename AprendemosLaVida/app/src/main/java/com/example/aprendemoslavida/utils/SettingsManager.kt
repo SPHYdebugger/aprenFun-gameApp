@@ -8,11 +8,14 @@ object SettingsManager {
     private const val PREFS_NAME = "aprendemos_prefs"
     private const val KEY_QUESTION_TIME_MS = "question_time_ms"
     private const val KEY_STORY_GAME_TIME_MS = "story_game_time_ms"
+    private const val KEY_STORY_MAP_COUNT = "story_map_count"
     private const val KEY_STORY_TROPHY_TOPIC_PREFIX = "story_trophy_topic_"
     private const val STORY_TROPHY_COUNT = 10
 
     private const val DEFAULT_QUESTION_TIME_MS = 12000
-    private const val DEFAULT_STORY_GAME_TIME_MS = 8 * 60 * 1000
+    private const val DEFAULT_STORY_GAME_TIME_MS = 6 * 60 * 1000
+    private const val DEFAULT_STORY_MAP_COUNT = 3
+    private val AVAILABLE_STORY_MAP_COUNTS = listOf(3, 5)
     private const val MIN_STORY_GAME_TIME_MS = 10 * 1000
     private const val MAX_STORY_GAME_TIME_MS = 59 * 60 * 1000 + 59 * 1000
     private val AVAILABLE_TIMES_MS = listOf(8000, 12000, 16000, 20000)
@@ -53,6 +56,31 @@ object SettingsManager {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit()
             .putInt(KEY_STORY_GAME_TIME_MS, valueMs.coerceIn(MIN_STORY_GAME_TIME_MS, MAX_STORY_GAME_TIME_MS))
+            .apply()
+    }
+
+    fun getStoryMapCount(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val value = prefs.getInt(KEY_STORY_MAP_COUNT, DEFAULT_STORY_MAP_COUNT)
+        return if (AVAILABLE_STORY_MAP_COUNTS.contains(value)) value else DEFAULT_STORY_MAP_COUNT
+    }
+
+    fun setStoryMapCount(context: Context, mapCount: Int) {
+        val safe = if (AVAILABLE_STORY_MAP_COUNTS.contains(mapCount)) mapCount else DEFAULT_STORY_MAP_COUNT
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putInt(KEY_STORY_MAP_COUNT, safe).apply()
+    }
+
+    fun defaultStoryTimeMsForMapCount(mapCount: Int): Int {
+        return if (mapCount == 3) 6 * 60 * 1000 else 10 * 60 * 1000
+    }
+
+    fun applyStorySessionPreset(context: Context, mapCount: Int) {
+        val safe = if (AVAILABLE_STORY_MAP_COUNTS.contains(mapCount)) mapCount else DEFAULT_STORY_MAP_COUNT
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit()
+            .putInt(KEY_STORY_MAP_COUNT, safe)
+            .putInt(KEY_STORY_GAME_TIME_MS, defaultStoryTimeMsForMapCount(safe))
             .apply()
     }
 

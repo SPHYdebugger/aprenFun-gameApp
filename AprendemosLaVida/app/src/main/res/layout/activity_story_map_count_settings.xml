@@ -10,9 +10,9 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="24dp"
-        android:layout_marginTop="80dp"
+        android:layout_marginTop="64dp"
         android:gravity="center"
-        android:text="@string/story_hidden_menu_title"
+        android:text="@string/story_map_count_title"
         android:textColor="@color/text_primary"
         android:textSize="22sp"
         android:textStyle="bold"
@@ -20,41 +20,42 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/themeButton"
-        style="@style/Widget.Aprendemos.Button"
+    <TextView
+        android:id="@+id/currentConfigText"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="32dp"
-        android:layout_marginTop="28dp"
-        android:text="@string/story_hidden_menu_topic_button"
+        android:layout_marginHorizontal="28dp"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:textColor="@color/text_primary"
+        android:textSize="14sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/titleText" />
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/gameTimeButton"
+        android:id="@+id/mode5MapsButton"
         style="@style/Widget.Aprendemos.Button"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="32dp"
-        android:layout_marginTop="14dp"
-        android:text="@string/story_hidden_menu_time_button"
+        android:layout_marginTop="24dp"
+        android:text="@string/story_map_count_mode_5"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/themeButton" />
+        app:layout_constraintTop_toBottomOf="@id/currentConfigText" />
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/mapCountButton"
+        android:id="@+id/mode3MapsButton"
         style="@style/Widget.Aprendemos.Button"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="32dp"
         android:layout_marginTop="14dp"
-        android:text="@string/story_hidden_menu_map_count_button"
+        android:text="@string/story_map_count_mode_3"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/gameTimeButton" />
+        app:layout_constraintTop_toBottomOf="@id/mode5MapsButton" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/backButton"
@@ -69,3 +70,4 @@
         app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+

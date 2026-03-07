@@ -73,6 +73,10 @@
             android:exported="false"
             android:screenOrientation="portrait" />
         <activity
+            android:name=".activities.StoryMapCountSettingsActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
             android:name=".activities.StoryThemeSelectionActivity"
             android:exported="false"
             android:screenOrientation="portrait" />

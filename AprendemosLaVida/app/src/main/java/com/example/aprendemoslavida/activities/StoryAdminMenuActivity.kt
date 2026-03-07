@@ -20,7 +20,10 @@ class StoryAdminMenuActivity : BaseActivity() {
             startActivity(Intent(this, StoryGameTimeSettingsActivity::class.java))
         }
 
+        binding.mapCountButton.setOnClickListener {
+            startActivity(Intent(this, StoryMapCountSettingsActivity::class.java))
+        }
+
         binding.backButton.setOnClickListener { finish() }
     }
 }
-

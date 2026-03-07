@@ -24,6 +24,7 @@ import com.example.aprendemoslavida.story.StoryQuestionProvider
 import com.example.aprendemoslavida.story.StoryScoreManager
 import com.example.aprendemoslavida.utils.ScoreManager
 import com.example.aprendemoslavida.utils.SettingsManager
+import kotlin.random.Random
 
 // Hosts the Zelda-like mode and coordinates map, gates, questions and scoring.
 class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionDialogFragment.Listener {
@@ -46,6 +47,8 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     private var currentMapIndex: Int = 0
     private var mapStartScore: Int = 0
     private var showingFinalCelebration: Boolean = false
+    private var sessionMapCount: Int = 5
+    private var completedMapsCount: Int = 0
     private val typewriterHandler = Handler(Looper.getMainLooper())
     private var typewriterRunnable: Runnable? = null
     private var typewriterFullText: String? = null
@@ -103,7 +106,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         }
 
         countdownTimer?.cancel()
-        if (currentMapIndex == storyMaps.lastIndex && timeLeftMs > 0L) {
+        if (completedMapsCount + 1 >= sessionMapCount && timeLeftMs > 0L) {
             showFinalCelebration()
         } else {
             showWorldSummaryDialog(timeUp = false)
@@ -182,7 +185,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         val intent = Intent(this, ResultActivity::class.java).apply {
             putExtra(ResultActivity.EXTRA_SCORE, finalScore)
             putExtra(ResultActivity.EXTRA_TOTAL_TIME, totalTime)
-            putExtra(ResultActivity.EXTRA_TOTAL_QUESTIONS, if (gameStarted) storyMaps.size * 10 else 0)
+            putExtra(ResultActivity.EXTRA_TOTAL_QUESTIONS, if (gameStarted) sessionMapCount * 10 else 0)
             putExtra(ResultActivity.EXTRA_GAME_MODE, ScoreManager.MODE_STORY)
         }
         startActivity(intent)
@@ -196,10 +199,10 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     ) {
         val worldScore = (scoreManager.score - mapStartScore).coerceAtLeast(0)
         val completedWorlds = when {
-            timeUp -> currentMapIndex
-            forceFinishOnOk -> currentMapIndex
-            else -> currentMapIndex + 1
-        }
+            timeUp -> completedMapsCount
+            forceFinishOnOk -> completedMapsCount
+            else -> completedMapsCount + 1
+        }.coerceIn(0, sessionMapCount)
         val summaryView = buildWorldSummaryView(worldScore, completedWorlds)
         val title = titleOverride ?: if (timeUp) {
             getString(R.string.story_time_up_uppercase)
@@ -225,14 +228,15 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
             return
         }
 
-        val hasNextMap = currentMapIndex < storyMaps.lastIndex
+        completedMapsCount += 1
+        val hasNextMap = completedMapsCount < sessionMapCount
         val hasTimeLeft = timeLeftMs > 0L
         if (!hasNextMap || !hasTimeLeft) {
             goToResults()
             return
         }
 
-        currentMapIndex += 1
+        currentMapIndex = nextMapIndex()
         loadMap(currentMapIndex)
         startCountdown()
     }
@@ -354,9 +358,9 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         val lineWidth = dp(36)
         val doneColor = Color.parseColor("#33AA33")
         val pendingColor = Color.parseColor("#E53935")
-        val safeCompleted = completedWorlds.coerceIn(0, storyMaps.size)
+        val safeCompleted = completedWorlds.coerceIn(0, sessionMapCount)
 
-        for (i in 0 until storyMaps.size) {
+        for (i in 0 until sessionMapCount) {
             val dot = View(this).apply {
                 background = GradientDrawable().apply {
                     shape = GradientDrawable.OVAL
@@ -366,7 +370,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
             }
             row.addView(dot)
 
-            if (i < storyMaps.lastIndex) {
+            if (i < sessionMapCount - 1) {
                 val line = View(this).apply {
                     background = GradientDrawable().apply {
                         shape = GradientDrawable.RECTANGLE
@@ -541,6 +545,8 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     private fun startStoryGame() {
         gameStarted = true
         currentMapIndex = 0
+        completedMapsCount = 0
+        sessionMapCount = SettingsManager.getStoryMapCount(this).coerceIn(3, 5)
         totalTimeMs = SettingsManager.getStoryGameTimeMs(this).toLong()
         timeLeftMs = totalTimeMs
         warningShown = false
@@ -554,6 +560,16 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         binding.timeText.setTextColor(getColor(R.color.text_primary))
         updateHud()
         startCountdown()
+    }
+
+    private fun nextMapIndex(): Int {
+        if (sessionMapCount == 3) {
+            val candidates = storyMaps.indices.filter { it != currentMapIndex }
+            if (candidates.isNotEmpty()) {
+                return candidates[Random.nextInt(candidates.size)]
+            }
+        }
+        return (currentMapIndex + 1).coerceAtMost(storyMaps.lastIndex)
     }
 
     private fun loadMap(index: Int) {

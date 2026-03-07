@@ -203,7 +203,7 @@
     <string name="story_score_format">Puntos: %1$d</string>
     <string name="story_checkpoints_default">Checkpoints: 0/5</string>
     <string name="story_checkpoints_format">Checkpoints: %1$d/%2$d</string>
-    <string name="story_time_default">Tiempo: 08:00</string>
+    <string name="story_time_default">Tiempo: 06:00</string>
     <string name="story_time_format">Tiempo: %1$02d:%2$02d</string>
     <string name="story_checkpoint_title">Trofeo encontrado</string>
     <string name="story_wrong_penalty">Fallo: -25 puntos</string>
@@ -233,6 +233,13 @@
     <string name="story_hidden_menu_title">Menú oculto</string>
     <string name="story_hidden_menu_topic_button">Temática</string>
     <string name="story_hidden_menu_time_button">Tiempo de juego</string>
+    <string name="story_hidden_menu_map_count_button">Número de mapas</string>
+    <string name="story_map_count_title">Número de mapas</string>
+    <string name="story_map_count_mode_5">Partida completa: 5 mapas (10 min)</string>
+    <string name="story_map_count_mode_3">Partida rápida: 3 mapas (6 min)</string>
+    <string name="story_map_count_saved_5">Configurado: 5 mapas y 10 minutos</string>
+    <string name="story_map_count_saved_3">Configurado: 3 mapas y 6 minutos</string>
+    <string name="story_map_count_current_format">Configuración actual: %1$d mapas, %2$d min</string>
     <string name="story_game_time_title">Tiempo total modo historia</string>
     <string name="story_game_time_minutes">Minutos</string>
     <string name="story_game_time_seconds">Segundos</string>
