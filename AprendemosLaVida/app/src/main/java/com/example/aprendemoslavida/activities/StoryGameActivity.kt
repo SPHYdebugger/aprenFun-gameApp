@@ -2,6 +2,8 @@ package com.example.aprendemoslavida.activities
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.view.View
 import android.view.Gravity
@@ -34,22 +36,25 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     private var currentDialogGateId: Int? = null
     private var gameStartMs: Long = 0L
     private var exitingDialog: Boolean = false
+    private var gameStarted: Boolean = false
+    private var introDeclined: Boolean = false
+    private val typewriterHandler = Handler(Looper.getMainLooper())
+    private var typewriterRunnable: Runnable? = null
+    private var typewriterFullText: String? = null
+    private var typewriterOnFinished: (() -> Unit)? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityStoryGameBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        questionProvider = StoryQuestionProvider(this)
-        progressManager = StoryProgressManager(questionProvider)
-        gameStartMs = SystemClock.elapsedRealtime()
-
         binding.storyGameView.listener = this
-        binding.storyGameView.setGates(progressManager.gates)
-        binding.storyGameView.randomizeSecretEntrance()
-        binding.storyGameView.resetPlayerPosition()
+        binding.storyGameView.setQuestionBlocking(true)
+        binding.topBar.visibility = View.GONE
+        binding.mapContainer.visibility = View.GONE
+        binding.controlsContainer.visibility = View.GONE
         updateHud()
-        startCountdown()
+        setupIntroFlow()
 
         binding.joystickView.listener = object : com.example.aprendemoslavida.story.VirtualJoystickView.Listener {
             override fun onInputChanged(x: Float, y: Float) {
@@ -59,12 +64,17 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
+                if (!gameStarted && binding.introOverlay.visibility == View.VISIBLE) {
+                    finish()
+                    return
+                }
                 showExitDialog()
             }
         })
     }
 
     override fun onGateBlocked(gateId: Int) {
+        if (!gameStarted) return
         if (currentDialogGateId != null || exitingDialog) return
 
         currentDialogGateId = gateId
@@ -75,6 +85,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     }
 
     override fun onExitReached() {
+        if (!gameStarted) return
         if (!progressManager.requiredGatesUnlocked()) {
             showStoryToast(getString(R.string.story_need_all_checkpoints))
             return
@@ -85,6 +96,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     }
 
     override fun onStoryQuestionAnswered(gateId: Int, selectedIndex: Int) {
+        if (!gameStarted) return
         val question = progressManager.getOrCreateQuestion(gateId)
         if (selectedIndex == question.correctIndex) {
             val elapsedMs = progressManager.elapsedForGate(gateId)
@@ -103,6 +115,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     }
 
     private fun showQuestionDialog(gateId: Int) {
+        if (!gameStarted) return
         if (supportFragmentManager.findFragmentByTag(StoryQuestionDialogFragment.TAG) != null) return
         val dialog = StoryQuestionDialogFragment.newInstance(gateId, progressManager.getOrCreateQuestion(gateId))
         dialog.show(supportFragmentManager, StoryQuestionDialogFragment.TAG)
@@ -148,7 +161,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         val intent = Intent(this, ResultActivity::class.java).apply {
             putExtra(ResultActivity.EXTRA_SCORE, finalScore)
             putExtra(ResultActivity.EXTRA_TOTAL_TIME, totalTime)
-            putExtra(ResultActivity.EXTRA_TOTAL_QUESTIONS, progressManager.gates.size)
+            putExtra(ResultActivity.EXTRA_TOTAL_QUESTIONS, if (gameStarted) progressManager.gates.size else 0)
             putExtra(ResultActivity.EXTRA_GAME_MODE, ScoreManager.MODE_STORY)
         }
         startActivity(intent)
@@ -333,6 +346,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     }
 
     private fun onTimeUp() {
+        if (!gameStarted) return
         binding.storyGameView.setQuestionBlocking(true)
         binding.joystickView.resetStick()
         countdownTimer?.cancel()
@@ -351,7 +365,106 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
 
     override fun onDestroy() {
         countdownTimer?.cancel()
+        cancelTypewriter()
         tone.release()
         super.onDestroy()
+    }
+
+    private fun setupIntroFlow() {
+        binding.introOverlay.visibility = View.VISIBLE
+        binding.introButtonsRow.visibility = View.GONE
+        binding.introBackButton.visibility = View.GONE
+        binding.introText.text = ""
+        binding.introOverlay.setOnClickListener {
+            if (typewriterRunnable != null) {
+                completeTypewriterImmediately()
+            }
+        }
+        binding.introBackButton.setOnClickListener { goToMainMenu() }
+        binding.introYesButton.setOnClickListener {
+            if (gameStarted) return@setOnClickListener
+            cancelTypewriter()
+            binding.introOverlay.visibility = View.GONE
+            startStoryGame()
+        }
+        binding.introNoButton.setOnClickListener {
+            if (introDeclined) return@setOnClickListener
+            introDeclined = true
+            binding.introButtonsRow.visibility = View.GONE
+            binding.introBackButton.visibility = View.GONE
+            startTypewriter(getString(R.string.story_intro_no_text)) {
+                binding.introBackButton.visibility = View.VISIBLE
+            }
+        }
+        startTypewriter(getString(R.string.story_intro_text)) {
+            if (!introDeclined) {
+                binding.introButtonsRow.visibility = View.VISIBLE
+            }
+        }
+    }
+
+    private fun startStoryGame() {
+        gameStarted = true
+        questionProvider = StoryQuestionProvider(this)
+        progressManager = StoryProgressManager(questionProvider)
+        gameStartMs = SystemClock.elapsedRealtime()
+        binding.storyGameView.setGates(progressManager.gates)
+        binding.storyGameView.randomizeSecretEntrance()
+        binding.storyGameView.resetPlayerPosition()
+        binding.storyGameView.setQuestionBlocking(false)
+        binding.topBar.visibility = View.VISIBLE
+        binding.mapContainer.visibility = View.VISIBLE
+        binding.controlsContainer.visibility = View.VISIBLE
+        binding.timeText.setTextColor(getColor(R.color.text_primary))
+        updateHud()
+        startCountdown()
+    }
+
+    private fun startTypewriter(text: String, onFinished: (() -> Unit)? = null) {
+        cancelTypewriter()
+        binding.introText.text = ""
+        typewriterFullText = text
+        typewriterOnFinished = onFinished
+        var index = 0
+        val runnable = object : Runnable {
+            override fun run() {
+                if (index >= text.length) {
+                    val callback = typewriterOnFinished
+                    typewriterRunnable = null
+                    typewriterFullText = null
+                    typewriterOnFinished = null
+                    callback?.invoke()
+                    return
+                }
+                index += 1
+                binding.introText.text = text.substring(0, index)
+                typewriterHandler.postDelayed(this, 52L)
+            }
+        }
+        typewriterRunnable = runnable
+        typewriterHandler.post(runnable)
+    }
+
+    private fun cancelTypewriter() {
+        typewriterRunnable?.let { typewriterHandler.removeCallbacks(it) }
+        typewriterRunnable = null
+        typewriterFullText = null
+        typewriterOnFinished = null
+    }
+
+    private fun completeTypewriterImmediately() {
+        val fullText = typewriterFullText ?: return
+        val callback = typewriterOnFinished
+        typewriterRunnable?.let { typewriterHandler.removeCallbacks(it) }
+        typewriterRunnable = null
+        typewriterFullText = null
+        typewriterOnFinished = null
+        binding.introText.text = fullText
+        callback?.invoke()
+    }
+
+    private fun goToMainMenu() {
+        startActivity(Intent(this, MainMenuActivity::class.java))
+        finish()
     }
 }

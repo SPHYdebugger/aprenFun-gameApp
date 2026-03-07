@@ -23,7 +23,7 @@
     <string name="change_language_to_spanish">Cambiar a español</string>
     <string name="question_time_button_placeholder">Tempo de resposta</string>
     <string name="question_time_button_format">Tempo de resposta: %1$ds</string>
-    <string name="question_time_dialog_title">Tempo para responder</string>
+    <string name="question_time_dialog_title">Tempo para responder en modo preguntas</string>
     <string name="question_time_option_format">%1$ds</string>
     <string name="cancel_button">Cancelar</string>
     <string name="exit_app">Saír</string>
@@ -214,4 +214,9 @@
     <string name="story_time_warning">O tempo estase acabando, chega canto antes á meta</string>
     <string name="story_time_up_title">Tempo esgotado</string>
     <string name="story_time_up_message">Rematou o tempo. A túa puntuación reducirase á metade.</string>
+    <string name="story_intro_character_cd">Sofía</string>
+    <string name="story_intro_yes">SI</string>
+    <string name="story_intro_no">NO</string>
+    <string name="story_intro_text">Hola, me llamo Sofía.\nNecesito que me ayudes a llegar al final del camino.\nResponde correctamente para obtener más puntos.\n\n¿ Te atreves ?</string>
+    <string name="story_intro_no_text">Vaya que pena, pues hasta otra...\n</string>
 </resources>

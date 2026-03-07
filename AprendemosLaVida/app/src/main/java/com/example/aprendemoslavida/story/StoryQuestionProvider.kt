@@ -11,28 +11,35 @@ import com.example.aprendemoslavida.utils.SocialGameManager
 // Adapter that reuses existing quiz managers to provide one question per checkpoint.
 class StoryQuestionProvider(private val context: Context) {
     private val pools = HashMap<StoryTopic, MutableList<StoryQuestion>>()
-    private val poolIndices = HashMap<StoryTopic, Int>()
+    private val recentQuestionKeys = HashMap<StoryTopic, MutableList<String>>()
 
     fun nextQuestion(topic: StoryTopic): StoryQuestion {
         val pool = pools.getOrPut(topic) { buildPool(topic) }
-        val index = poolIndices[topic] ?: 0
-        if (pool.isEmpty() || index >= pool.size) {
+        if (pool.isEmpty()) {
             pools[topic] = buildPool(topic)
-            poolIndices[topic] = 0
+        }
+        val refreshedPool = pools[topic] ?: mutableListOf()
+        if (refreshedPool.isEmpty()) {
+            return StoryQuestion(
+                text = "Pregunta no disponible",
+                options = listOf("A", "B", "C", "D"),
+                correctIndex = 0
+            )
         }
 
-        val refreshedPool = pools[topic] ?: buildPool(topic).also { pools[topic] = it }
-        val safeIndex = poolIndices[topic] ?: 0
-        val question = refreshedPool[safeIndex]
-        poolIndices[topic] = safeIndex + 1
-        return question
+        val recent = recentQuestionKeys.getOrPut(topic) { mutableListOf() }
+        val selected = pickRandomWithRecentAvoidance(refreshedPool, recent)
+        registerRecent(selected, refreshedPool.size, recent)
+
+        // Re-shuffle answers on each ask to avoid repeated option order.
+        return shuffledStoryQuestion(selected.text, selected.options, selected.correctIndex)
     }
 
     private fun buildPool(topic: StoryTopic): MutableList<StoryQuestion> {
         val questions = when (topic) {
             StoryTopic.NATURAL -> GameManager.loadAllQuestions(context).map { fromClassicQuestion(it) }
             StoryTopic.MATH_MULTIPLICATION -> MathGameManager.allQuestions().map { q ->
-                StoryQuestion(
+                shuffledStoryQuestion(
                     text = context.getString(
                         com.example.aprendemoslavida.R.string.math_question_format,
                         q.a,
@@ -43,7 +50,7 @@ class StoryQuestionProvider(private val context: Context) {
                 )
             }
             StoryTopic.MATH_ADD_SUB -> AddSubMathGameManager.allQuestions(context).map { q ->
-                StoryQuestion(
+                shuffledStoryQuestion(
                     text = q.expression,
                     options = q.options.map { it.toString() },
                     correctIndex = q.correctIndex
@@ -56,6 +63,37 @@ class StoryQuestionProvider(private val context: Context) {
         return questions.toMutableList()
     }
 
+    private fun pickRandomWithRecentAvoidance(
+        pool: List<StoryQuestion>,
+        recent: MutableList<String>
+    ): StoryQuestion {
+        if (recent.isEmpty()) return pool.random()
+        val recentSet = recent.toHashSet()
+        val candidates = pool.filter { !recentSet.contains(questionKey(it)) }
+        return if (candidates.isNotEmpty()) {
+            candidates.random()
+        } else {
+            pool.random()
+        }
+    }
+
+    private fun registerRecent(question: StoryQuestion, poolSize: Int, recent: MutableList<String>) {
+        val key = questionKey(question)
+        recent.add(key)
+        val maxRecent = (poolSize / 3).coerceIn(6, 30)
+        while (recent.size > maxRecent) {
+            recent.removeAt(0)
+        }
+    }
+
+    private fun questionKey(question: StoryQuestion): String {
+        return buildString {
+            append(question.text)
+            append('|')
+            append(question.options.getOrNull(question.correctIndex) ?: "")
+        }
+    }
+
     private fun fromClassicQuestion(question: Question?): StoryQuestion {
         if (question == null) {
             return StoryQuestion(
@@ -64,10 +102,29 @@ class StoryQuestionProvider(private val context: Context) {
                 correctIndex = 0
             )
         }
-        return StoryQuestion(
+        return shuffledStoryQuestion(
             text = question.text,
             options = question.options.take(4),
             correctIndex = question.correctIndex.coerceIn(0, 3)
+        )
+    }
+
+    private fun shuffledStoryQuestion(
+        text: String,
+        options: List<String>,
+        correctIndex: Int
+    ): StoryQuestion {
+        val normalized = options.take(4)
+        if (normalized.isEmpty()) {
+            return StoryQuestion(text = text, options = listOf("A", "B", "C", "D"), correctIndex = 0)
+        }
+        val safeCorrect = correctIndex.coerceIn(0, normalized.lastIndex)
+        val withFlags = normalized.mapIndexed { index, option -> option to (index == safeCorrect) }.shuffled()
+        val newCorrect = withFlags.indexOfFirst { it.second }.coerceAtLeast(0)
+        return StoryQuestion(
+            text = text,
+            options = withFlags.map { it.first },
+            correctIndex = newCorrect
         )
     }
 }
