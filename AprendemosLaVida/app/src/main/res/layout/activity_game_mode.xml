@@ -61,6 +61,18 @@
         app:layout_constraintTop_toBottomOf="@+id/englishButton" />
 
     <com.google.android.material.button.MaterialButton
+        android:id="@+id/languageButton"
+        style="@style/Widget.Aprendemos.Button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginTop="16dp"
+        android:text="@string/mode_language"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/socialButton" />
+
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/storyButton"
         style="@style/Widget.Aprendemos.Button"
         android:layout_width="0dp"
@@ -70,7 +82,7 @@
         android:text="@string/mode_story"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/socialButton" />
+        app:layout_constraintTop_toBottomOf="@+id/languageButton" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/backButton"

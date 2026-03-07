@@ -27,9 +27,11 @@ class SettingsActivity : BaseActivity() {
 
         updateLanguageButtonLabel()
         updateQuestionTimeButtonLabel()
+        updateSoundButtonLabel()
 
         binding.changeLanguageButton.setOnClickListener { toggleLanguage() }
         binding.questionTimeButton.setOnClickListener { showQuestionTimeDialog() }
+        binding.soundButton.setOnClickListener { toggleSound() }
 
         binding.backButton.setOnTouchListener { _, event ->
             when (event.actionMasked) {
@@ -94,6 +96,17 @@ class SettingsActivity : BaseActivity() {
             .show()
 
         dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(getColor(R.color.accent))
+    }
+
+    private fun toggleSound() {
+        val enabled = SettingsManager.isSoundEnabled(this)
+        SettingsManager.setSoundEnabled(this, !enabled)
+        updateSoundButtonLabel()
+    }
+
+    private fun updateSoundButtonLabel() {
+        val enabled = SettingsManager.isSoundEnabled(this)
+        binding.soundButton.setText(if (enabled) R.string.sound_toggle_on else R.string.sound_toggle_off)
     }
 
     override fun onDestroy() {

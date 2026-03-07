@@ -10,6 +10,7 @@
     <string name="mode_math">Matemáticas ✖️</string>
     <string name="mode_english">Inglés 🇬🇧</string>
     <string name="mode_social">C. Sociales 🌍</string>
+    <string name="mode_language">Lengua ✍️</string>
     <string name="mode_story">Modo historia 🗺️</string>
     <string name="game_type_title">Tipo de juego</string>
     <string name="game_type_questions">MODO PREGUNTAS</string>
@@ -21,6 +22,8 @@
     <string name="change_language">Cambiar idioma</string>
     <string name="change_language_to_galician">Cambiar a galego</string>
     <string name="change_language_to_spanish">Cambiar a español</string>
+    <string name="sound_toggle_on">Sonido: Activado</string>
+    <string name="sound_toggle_off">Sonido: Desactivado</string>
     <string name="question_time_button_placeholder">Tiempo de respuesta</string>
     <string name="question_time_button_format">Tiempo de respuesta: %1$ds</string>
     <string name="question_time_dialog_title">Tiempo para responder en modo preguntas</string>
@@ -34,7 +37,7 @@
     <string name="exit_confirm_no">No</string>
 
     <string name="how_to_title">Cómo jugar ✨</string>
-    <string name="how_to_text">En AprenFun!! tienes cuatro modos de juego. Elige el que más te guste y trata de conseguir la mejor puntuación.\n\nJUEGO DE NATURALES\nEn este modo responderás 20 preguntas sobre la vida y la naturaleza. Cada pregunta tiene 4 posibles respuestas y solo una es correcta. Tienes un tiempo limitado para contestar: cuanto más rápido aciertes, más puntos conseguirás. Si fallas, no sumas puntos en esa pregunta y pasarás a la siguiente, así que concéntrate y responde con calma pero sin perder tiempo. Al terminar las 20 preguntas verás tu puntuación total y podrás guardarla para comparar con otras partidas.\n\nJUEGO DE MATEMÁTICAS\nEn este modo practicarás las tablas de multiplicar del 1 al 5, con multiplicaciones desde x1 hasta x10. También son 20 preguntas en total. Aparecerán 4 respuestas y solo una será correcta. La velocidad cuenta: cuanto más rápido aciertes, más puntos ganarás. Si fallas, aparecerá un recordatorio con la forma correcta de la multiplicación y se te restarán 20 puntos. La misma pregunta se repetirá hasta que la acertes, así que úsala para aprender y mejorar. Al finalizar verás tu puntuación total y podrás guardarla.\n\nJUEGO DE INGLÉS\nEn este modo responderás 20 preguntas en inglés. El funcionamiento es como en Naturales: 4 respuestas, una correcta, y cuanto más rápido aciertes, más puntos. Si fallas, se cambia de pregunta. Para que tengas tiempo de leer con calma, el tiempo por pregunta es el doble que en los otros modos. Al finalizar podrás guardar tu puntuación en la tabla de inglés.</string>
+    <string name="how_to_text">En AprenFun!! hay 2 formas de jugar:\n\nMODO PREGUNTAS\nPrimero eliges asignatura (Naturales, Matemáticas, Inglés, Sociales o Lengua). Después respondes preguntas tipo test con 4 opciones.\n- Cuanto más rápido aciertes, más puntos consigues.\n- Si fallas, la puntuación baja o no suma según el tipo de pregunta.\n- Al terminar, verás tu resultado y podrás guardarlo.\n\nMODO HISTORIA\nControlas a Sofía por mapas con caminos, trofeos y meta final.\n- Cada trofeo activa una pregunta del tema asignado.\n- Necesitas conseguir al menos 5 trofeos para poder entrar en la meta.\n- Hay tiempo total de partida.\n- Puedes jugar partidas de 3 o 5 mapas.\n- En cada final de mapa verás puntos, trofeos y progreso total.</string>
     <string name="back_button">Volver ⬅️</string>
 
     <string name="game_progress_placeholder">Pregunta 1/20</string>
@@ -82,6 +85,7 @@
     <string name="scores_title_math">Puntuaciones Matemáticas ✖️</string>
     <string name="scores_title_english">Puntuaciones Inglés 🇬🇧</string>
     <string name="scores_title_social">Puntuaciones C. Sociales 🌍</string>
+    <string name="scores_title_language">Puntuaciones Lengua ✍️</string>
     <string name="scores_title_story">Puntuaciones Modo Historia 🗺️</string>
     <string name="scores_empty">Aún no hay puntuaciones</string>
     <string name="score_item_format">%1$d. %2$s - %3$d pts - %4$s</string>
@@ -203,7 +207,7 @@
     <string name="story_score_format">Puntos: %1$d</string>
     <string name="story_checkpoints_default">Checkpoints: 0/5</string>
     <string name="story_checkpoints_format">Checkpoints: %1$d/%2$d</string>
-    <string name="story_time_default">Tiempo: 06:00</string>
+    <string name="story_time_default">Tiempo: 07:00</string>
     <string name="story_time_format">Tiempo: %1$02d:%2$02d</string>
     <string name="story_checkpoint_title">Trofeo encontrado</string>
     <string name="story_wrong_penalty">Fallo: -25 puntos</string>
@@ -256,6 +260,7 @@
     <string name="story_subject_natural">Naturales</string>
     <string name="story_subject_social">Sociales</string>
     <string name="story_subject_english">Inglés</string>
+    <string name="story_subject_language">Lengua</string>
     <string name="story_trophy_1">Trofeo 1</string>
     <string name="story_trophy_2">Trofeo 2</string>
     <string name="story_trophy_3">Trofeo 3</string>
@@ -267,4 +272,3 @@
     <string name="story_trophy_9">Trofeo 9</string>
     <string name="story_trophy_10">Trofeo 10</string>
 </resources>
-

@@ -3,6 +3,7 @@ package com.example.aprendemoslavida.activities
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -14,6 +15,7 @@ import androidx.appcompat.app.AlertDialog
 import android.media.AudioManager
 import android.media.ToneGenerator
 import android.os.CountDownTimer
+import android.content.res.ColorStateList
 import com.example.aprendemoslavida.R
 import com.example.aprendemoslavida.databinding.ActivityStoryGameBinding
 import com.example.aprendemoslavida.story.StoryGameView
@@ -38,6 +40,9 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     private var timeLeftMs: Long = totalTimeMs
     private var warningShown: Boolean = false
     private val tone = ToneGenerator(AudioManager.STREAM_MUSIC, 80)
+    private var musicPlayer: MediaPlayer? = null
+    private var soundEnabled: Boolean = true
+    private var fastMusicApplied: Boolean = false
 
     private var currentDialogGateId: Int? = null
     private var gameStartMs: Long = 0L
@@ -64,6 +69,10 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         binding.topBar.visibility = View.GONE
         binding.mapContainer.visibility = View.GONE
         binding.controlsContainer.visibility = View.GONE
+        binding.storySoundButton.visibility = View.GONE
+        soundEnabled = SettingsManager.isSoundEnabled(this)
+        updateSoundIcon()
+        binding.storySoundButton.setOnClickListener { toggleStorySound() }
         updateHud()
         setupIntroFlow()
 
@@ -224,6 +233,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
 
     private fun onSummaryAccepted(timeUp: Boolean, forceFinishOnOk: Boolean) {
         if (timeUp || forceFinishOnOk) {
+            stopMusic()
             goToResults()
             return
         }
@@ -232,6 +242,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         val hasNextMap = completedMapsCount < sessionMapCount
         val hasTimeLeft = timeLeftMs > 0L
         if (!hasNextMap || !hasTimeLeft) {
+            stopMusic()
             goToResults()
             return
         }
@@ -466,6 +477,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
                     warningShown = true
                     tone.startTone(ToneGenerator.TONE_PROP_BEEP, 300)
                     showStoryToast(getString(R.string.story_time_warning))
+                    setMusicSpeed(multiplier = 1.25f)
                 }
                 if (timeLeftMs <= 60_000L) {
                     val seconds = (timeLeftMs / 1000L).toInt()
@@ -505,8 +517,25 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         countdownTimer?.cancel()
         cancelTypewriter()
         hideFinalCelebration()
+        stopMusic()
         tone.release()
         super.onDestroy()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        musicPlayer?.pause()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (gameStarted && soundEnabled) {
+            try {
+                musicPlayer?.start()
+            } catch (_: IllegalStateException) {
+                startMusicIfNeeded()
+            }
+        }
     }
 
     private fun setupIntroFlow() {
@@ -557,8 +586,10 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         binding.topBar.visibility = View.VISIBLE
         binding.mapContainer.visibility = View.VISIBLE
         binding.controlsContainer.visibility = View.VISIBLE
+        binding.storySoundButton.visibility = View.VISIBLE
         binding.timeText.setTextColor(getColor(R.color.text_primary))
         updateHud()
+        startMusicIfNeeded()
         startCountdown()
     }
 
@@ -570,6 +601,61 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
             }
         }
         return (currentMapIndex + 1).coerceAtMost(storyMaps.lastIndex)
+    }
+
+    private fun toggleStorySound() {
+        soundEnabled = !soundEnabled
+        SettingsManager.setSoundEnabled(this, soundEnabled)
+        updateSoundIcon()
+        if (soundEnabled) {
+            startMusicIfNeeded()
+        } else {
+            stopMusic()
+        }
+    }
+
+    private fun updateSoundIcon() {
+        val icon = if (soundEnabled) {
+            android.R.drawable.ic_lock_silent_mode_off
+        } else {
+            android.R.drawable.ic_lock_silent_mode
+        }
+        binding.storySoundButton.setImageResource(icon)
+        binding.storySoundButton.imageTintList = ColorStateList.valueOf(getColor(R.color.text_primary))
+        binding.storySoundButton.contentDescription =
+            getString(if (soundEnabled) R.string.sound_toggle_on else R.string.sound_toggle_off)
+    }
+
+    private fun startMusicIfNeeded() {
+        if (!soundEnabled || !gameStarted) return
+        if (musicPlayer == null) {
+            musicPlayer = MediaPlayer.create(this, R.raw.story_music)?.apply {
+                isLooping = true
+                setVolume(0.55f, 0.55f)
+            }
+        }
+        setMusicSpeed(if (warningShown) 1.25f else 1.0f)
+        musicPlayer?.start()
+    }
+
+    private fun stopMusic() {
+        musicPlayer?.stop()
+        musicPlayer?.release()
+        musicPlayer = null
+        fastMusicApplied = false
+    }
+
+    private fun setMusicSpeed(multiplier: Float) {
+        if (fastMusicApplied && multiplier > 1f) return
+        fastMusicApplied = multiplier > 1f
+        val player = musicPlayer ?: return
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.M) return
+        try {
+            val params = player.playbackParams ?: android.media.PlaybackParams()
+            player.playbackParams = params.setSpeed(multiplier)
+        } catch (_: Exception) {
+            // Ignore on devices where playback speed is not supported for this stream.
+        }
     }
 
     private fun loadMap(index: Int) {

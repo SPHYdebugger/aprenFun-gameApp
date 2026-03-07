@@ -28,6 +28,7 @@ class ScoresActivity : BaseActivity() {
             ScoreManager.MODE_MATH -> getString(R.string.scores_title_math)
             ScoreManager.MODE_ENGLISH -> getString(R.string.scores_title_english)
             ScoreManager.MODE_SOCIAL -> getString(R.string.scores_title_social)
+            ScoreManager.MODE_LANGUAGE -> getString(R.string.scores_title_language)
             ScoreManager.MODE_STORY -> getString(R.string.scores_title_story)
             else -> getString(R.string.scores_title_natural)
         }

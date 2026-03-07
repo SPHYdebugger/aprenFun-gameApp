@@ -7,6 +7,7 @@ import com.example.aprendemoslavida.utils.EnglishGameManager
 import com.example.aprendemoslavida.utils.GameManager
 import com.example.aprendemoslavida.utils.MathGameManager
 import com.example.aprendemoslavida.utils.SocialGameManager
+import com.example.aprendemoslavida.utils.LanguageGameManager
 
 // Adapter that reuses existing quiz managers to provide one question per checkpoint.
 class StoryQuestionProvider(private val context: Context) {
@@ -62,6 +63,7 @@ class StoryQuestionProvider(private val context: Context) {
                 )
             }
             StoryTopic.SOCIAL -> SocialGameManager.allQuestions(context).map { fromClassicQuestion(it) }
+            StoryTopic.LANGUAGE -> LanguageGameManager.allQuestions(context).map { fromClassicQuestion(it) }
         }.shuffled()
 
         return questions.toMutableList()

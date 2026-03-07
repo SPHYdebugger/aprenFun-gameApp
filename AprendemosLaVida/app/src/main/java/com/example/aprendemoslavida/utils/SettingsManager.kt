@@ -9,11 +9,12 @@ object SettingsManager {
     private const val KEY_QUESTION_TIME_MS = "question_time_ms"
     private const val KEY_STORY_GAME_TIME_MS = "story_game_time_ms"
     private const val KEY_STORY_MAP_COUNT = "story_map_count"
+    private const val KEY_SOUND_ENABLED = "sound_enabled"
     private const val KEY_STORY_TROPHY_TOPIC_PREFIX = "story_trophy_topic_"
     private const val STORY_TROPHY_COUNT = 10
 
     private const val DEFAULT_QUESTION_TIME_MS = 12000
-    private const val DEFAULT_STORY_GAME_TIME_MS = 6 * 60 * 1000
+    private const val DEFAULT_STORY_GAME_TIME_MS = 7 * 60 * 1000
     private const val DEFAULT_STORY_MAP_COUNT = 3
     private val AVAILABLE_STORY_MAP_COUNTS = listOf(3, 5)
     private const val MIN_STORY_GAME_TIME_MS = 10 * 1000
@@ -22,14 +23,21 @@ object SettingsManager {
     private val DEFAULT_STORY_TOPICS = listOf(
         StoryTopic.NATURAL,
         StoryTopic.MATH_MULTIPLICATION,
-        StoryTopic.MATH_ADD_SUB,
         StoryTopic.ENGLISH,
         StoryTopic.SOCIAL,
+        StoryTopic.LANGUAGE,
         StoryTopic.NATURAL,
-        StoryTopic.MATH_ADD_SUB,
+        StoryTopic.MATH_MULTIPLICATION,
         StoryTopic.ENGLISH,
         StoryTopic.SOCIAL,
-        StoryTopic.NATURAL
+        StoryTopic.LANGUAGE
+    )
+    private val STORY_RANDOM_TOPIC_POOL = listOf(
+        StoryTopic.NATURAL,
+        StoryTopic.MATH_MULTIPLICATION,
+        StoryTopic.SOCIAL,
+        StoryTopic.ENGLISH,
+        StoryTopic.LANGUAGE
     )
 
     fun availableQuestionTimesMs(): List<Int> = AVAILABLE_TIMES_MS
@@ -57,6 +65,16 @@ object SettingsManager {
         prefs.edit()
             .putInt(KEY_STORY_GAME_TIME_MS, valueMs.coerceIn(MIN_STORY_GAME_TIME_MS, MAX_STORY_GAME_TIME_MS))
             .apply()
+    }
+
+    fun isSoundEnabled(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_SOUND_ENABLED, true)
+    }
+
+    fun setSoundEnabled(context: Context, enabled: Boolean) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(KEY_SOUND_ENABLED, enabled).apply()
     }
 
     fun getStoryMapCount(context: Context): Int {
@@ -114,8 +132,7 @@ object SettingsManager {
     }
 
     fun restoreRandomStoryGateTopics(context: Context): List<StoryTopic> {
-        val allTopics = StoryTopic.values().toList()
-        val randomTopics = (0 until STORY_TROPHY_COUNT).map { allTopics.random() }
+        val randomTopics = (0 until STORY_TROPHY_COUNT).map { STORY_RANDOM_TOPIC_POOL.random() }
         setStoryGateTopics(context, randomTopics)
         return randomTopics
     }

@@ -89,6 +89,20 @@
             android:layout_height="match_parent" />
     </FrameLayout>
 
+    <ImageButton
+        android:id="@+id/storySoundButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="6dp"
+        android:background="@drawable/bg_toast"
+        android:contentDescription="@string/sound_toggle_on"
+        android:padding="10dp"
+        android:src="@android:drawable/ic_lock_silent_mode_off"
+        android:tint="@color/text_primary"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/mapContainer" />
+
     <FrameLayout
         android:id="@+id/introOverlay"
         android:layout_width="0dp"

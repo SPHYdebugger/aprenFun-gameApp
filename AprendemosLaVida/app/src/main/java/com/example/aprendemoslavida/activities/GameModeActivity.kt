@@ -67,6 +67,19 @@ class GameModeActivity : BaseActivity() {
             }
         }
 
+        binding.languageButton.setOnClickListener {
+            if (action == ACTION_SCORES) {
+                startActivity(
+                    Intent(this, ScoresActivity::class.java).putExtra(
+                        ScoresActivity.EXTRA_SCORE_MODE,
+                        com.example.aprendemoslavida.utils.ScoreManager.MODE_LANGUAGE
+                    )
+                )
+            } else {
+                startActivity(Intent(this, LanguageGameActivity::class.java))
+            }
+        }
+
         if (action == ACTION_SCORES) {
             binding.storyButton.visibility = View.VISIBLE
             binding.storyButton.setOnClickListener {

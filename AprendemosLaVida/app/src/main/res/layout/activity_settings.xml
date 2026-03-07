@@ -52,6 +52,18 @@
         app:layout_constraintTop_toBottomOf="@+id/changeLanguageButton" />
 
     <com.google.android.material.button.MaterialButton
+        android:id="@+id/soundButton"
+        style="@style/Widget.Aprendemos.Button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginTop="16dp"
+        android:text="@string/sound_toggle_on"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/questionTimeButton" />
+
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/backButton"
         style="@style/Widget.Aprendemos.Button"
         android:layout_width="0dp"

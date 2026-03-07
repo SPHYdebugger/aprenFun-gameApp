@@ -48,6 +48,7 @@ class ResultActivity : BaseActivity() {
                     SocialGameActivity.EXTRA_TOPIC,
                     socialTopic
                 )
+                ScoreManager.MODE_LANGUAGE -> Intent(this, LanguageGameActivity::class.java)
                 ScoreManager.MODE_STORY -> Intent(this, StoryGameActivity::class.java)
                 else -> Intent(this, GameActivity::class.java)
             }

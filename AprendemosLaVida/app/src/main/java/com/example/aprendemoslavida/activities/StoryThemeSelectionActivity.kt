@@ -16,7 +16,8 @@ class StoryThemeSelectionActivity : BaseActivity() {
         StoryTopic.MATH_MULTIPLICATION,
         StoryTopic.NATURAL,
         StoryTopic.SOCIAL,
-        StoryTopic.ENGLISH
+        StoryTopic.ENGLISH,
+        StoryTopic.LANGUAGE
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,7 +30,8 @@ class StoryThemeSelectionActivity : BaseActivity() {
             getString(R.string.story_subject_math_multiplication),
             getString(R.string.story_subject_natural),
             getString(R.string.story_subject_social),
-            getString(R.string.story_subject_english)
+            getString(R.string.story_subject_english),
+            getString(R.string.story_subject_language)
         )
 
         allSpinners = listOf(

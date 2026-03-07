@@ -7,14 +7,14 @@ import kotlin.random.Random
 private val DEFAULT_GATE_TOPICS: List<StoryTopic> = listOf(
     StoryTopic.NATURAL,
     StoryTopic.MATH_MULTIPLICATION,
-    StoryTopic.MATH_ADD_SUB,
     StoryTopic.ENGLISH,
     StoryTopic.SOCIAL,
+    StoryTopic.LANGUAGE,
     StoryTopic.NATURAL,
-    StoryTopic.MATH_ADD_SUB,
+    StoryTopic.MATH_MULTIPLICATION,
     StoryTopic.ENGLISH,
     StoryTopic.SOCIAL,
-    StoryTopic.NATURAL
+    StoryTopic.LANGUAGE
 )
 
 // Tracks gate state, pending questions and per-gate timer.

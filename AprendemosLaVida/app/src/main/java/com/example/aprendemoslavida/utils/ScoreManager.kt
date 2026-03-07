@@ -71,6 +71,7 @@ class ScoreManager(private val context: Context) {
         const val MODE_MATH = "math"
         const val MODE_ENGLISH = "english"
         const val MODE_SOCIAL = "social"
+        const val MODE_LANGUAGE = "language"
         const val MODE_STORY = "story"
     }
 }

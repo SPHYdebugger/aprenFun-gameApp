@@ -6,5 +6,6 @@ enum class StoryTopic {
     MATH_MULTIPLICATION,
     MATH_ADD_SUB,
     ENGLISH,
-    SOCIAL
+    SOCIAL,
+    LANGUAGE
 }
