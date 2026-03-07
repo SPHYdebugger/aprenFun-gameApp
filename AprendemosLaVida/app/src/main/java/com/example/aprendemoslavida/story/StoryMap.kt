@@ -14,6 +14,9 @@ class StoryMap(
     private val hiddenZones: List<RectF>,
     private val hiddenZoneEntrances: Set<Pair<Int, Int>>,
     private val secretEntrances: List<Pair<Int, Int>>,
+    val trophyMainCandidates: List<Pair<Int, Int>>,
+    val trophySecretCandidates: List<Pair<Int, Int>>,
+    val trophyHiddenCandidates: List<Pair<Int, Int>>,
     val startTileX: Float,
     val startTileY: Float,
     val exitRect: RectF
@@ -192,6 +195,19 @@ class StoryMap(
                 hiddenZoneIndex[index(x, y)] = -1
             }
 
+            val hiddenZoneSet = hiddenZoneTiles.toSet()
+            val secretPathSet = secretPath.toSet()
+            val hiddenAccessSet = hiddenAccessPath.toSet()
+            val startTile = floor(1.5f).toInt() to floor(1.5f).toInt()
+            val exitTile = floor(2f).toInt() to floor(11f).toInt()
+            val mainCandidates = path.filter { tile ->
+                tile != startTile &&
+                    tile != exitTile &&
+                    !secretPathSet.contains(tile) &&
+                    !hiddenZoneSet.contains(tile) &&
+                    !hiddenAccessSet.contains(tile)
+            }
+
             return StoryMap(
                 width = width,
                 height = height,
@@ -201,10 +217,289 @@ class StoryMap(
                 hiddenZones = hiddenZones,
                 hiddenZoneEntrances = hiddenZoneEntrances,
                 secretEntrances = secretEntrances,
+                trophyMainCandidates = mainCandidates,
+                trophySecretCandidates = secretPath,
+                trophyHiddenCandidates = hiddenZoneTiles,
                 startTileX = 1.5f,
                 startTileY = 1.5f,
                 exitRect = RectF(2f, 11f, 3f, 12f)
             ).apply { randomizeSecretEntrance() }
+        }
+
+        // New map variants (not active yet). They keep the same mechanics:
+        // - random secret entrance each match
+        // - hidden passable-tree corridor to a hidden zone that reveals when entered
+        fun createVariant1(): StoryMap {
+            val mainPath = linkedSetOf<Pair<Int, Int>>().apply {
+                addHorizontal(1, 1, 19)
+                addVertical(19, 1, 5)
+                addHorizontal(3, 5, 19)
+                addVertical(3, 5, 9)
+                addHorizontal(3, 9, 16)
+                addVertical(16, 9, 12)
+                addHorizontal(2, 12, 16)
+            }
+            val secretPath = listOf(7 to 7, 8 to 7, 9 to 7, 10 to 7)
+            val secretEntrances = listOf(6 to 7, 7 to 6, 10 to 6)
+            val hiddenZoneTiles = rectTiles(11, 14, 18, 15)
+            val hiddenAccessPath = listOf(15 to 13, 15 to 14)
+            val rocks = listOf(6 to 1, 11 to 5, 9 to 9)
+
+            return buildVariantMap(
+                basePath = mainPath,
+                rocks = rocks,
+                secretPath = secretPath,
+                secretEntrances = secretEntrances,
+                hiddenZoneTiles = hiddenZoneTiles,
+                hiddenZoneRect = RectF(11f, 14f, 19f, 16f),
+                hiddenAccessPath = hiddenAccessPath,
+                startTileX = 1.5f,
+                startTileY = 1.5f,
+                exitRect = RectF(2f, 12f, 3f, 13f)
+            )
+        }
+
+        fun createVariant2(): StoryMap {
+            val mainPath = linkedSetOf<Pair<Int, Int>>().apply {
+                addVertical(2, 1, 12)
+                addHorizontal(2, 12, 18)
+                addVertical(18, 3, 12)
+                addHorizontal(5, 4, 18)
+                addVertical(4, 5, 9)
+                addHorizontal(4, 9, 15)
+                addVertical(15, 9, 13)
+            }
+            val secretPath = listOf(9 to 4, 9 to 5, 9 to 6, 10 to 6)
+            val secretEntrances = listOf(8 to 5, 10 to 5, 10 to 6)
+            val hiddenZoneTiles = rectTiles(16, 13, 20, 15)
+            val hiddenAccessPath = listOf(16 to 13, 17 to 13)
+            val rocks = listOf(2 to 7, 12 to 12, 13 to 9)
+
+            return buildVariantMap(
+                basePath = mainPath,
+                rocks = rocks,
+                secretPath = secretPath,
+                secretEntrances = secretEntrances,
+                hiddenZoneTiles = hiddenZoneTiles,
+                hiddenZoneRect = RectF(16f, 13f, 21f, 16f),
+                hiddenAccessPath = hiddenAccessPath,
+                startTileX = 2.5f,
+                startTileY = 1.5f,
+                exitRect = RectF(15f, 13f, 16f, 14f)
+            )
+        }
+
+        // Non-linear map with multiple routes to the exit.
+        fun createVariant3(): StoryMap {
+            val mainPath = linkedSetOf<Pair<Int, Int>>().apply {
+                // Maze-like layout with intersections and multiple ways to approach the end.
+                addHorizontal(1, 1, 19)
+                addHorizontal(1, 5, 17)
+                addHorizontal(3, 9, 19)
+                addHorizontal(2, 13, 20)
+
+                addVertical(3, 1, 13)
+                addVertical(7, 1, 9)
+                addVertical(11, 5, 13)
+                addVertical(15, 1, 13)
+                addVertical(18, 9, 13)
+
+                // Dead-end where the exit is placed.
+                addVertical(20, 12, 13)
+            }
+            val secretPath = listOf(8 to 6, 9 to 6, 10 to 6, 11 to 6)
+            val secretEntrances = listOf(7 to 6, 8 to 5, 11 to 5)
+            val hiddenZoneTiles = rectTiles(4, 14, 8, 15)
+            val hiddenAccessPath = listOf(8 to 13, 8 to 14)
+            val rocks = listOf(5 to 1, 12 to 9, 16 to 5, 19 to 13)
+
+            return buildVariantMap(
+                basePath = mainPath,
+                rocks = rocks,
+                secretPath = secretPath,
+                secretEntrances = secretEntrances,
+                hiddenZoneTiles = hiddenZoneTiles,
+                hiddenZoneRect = RectF(4f, 14f, 9f, 16f),
+                hiddenAccessPath = hiddenAccessPath,
+                startTileX = 1.5f,
+                startTileY = 1.5f,
+                exitRect = RectF(20f, 13f, 21f, 14f)
+            )
+        }
+
+        fun createVariant4(): StoryMap {
+            val mainPath = linkedSetOf<Pair<Int, Int>>().apply {
+                // Top corridor to the right side.
+                addHorizontal(1, 1, 19)
+                addVertical(19, 1, 7)
+
+                // Main middle corridor where exit is placed (left side).
+                addHorizontal(4, 7, 19)
+
+                // Right-side loop/bulge.
+                addVertical(19, 7, 11)
+                addHorizontal(17, 8, 19)
+                addVertical(17, 8, 11)
+                addHorizontal(17, 11, 19)
+
+                // Lower loop and bottom return.
+                addVertical(6, 7, 14)
+                addHorizontal(6, 11, 17)
+                addVertical(16, 11, 14)
+                addHorizontal(6, 14, 16)
+            }
+            val secretPath = buildList {
+                for (x in 8..15) add(x to 3)
+                for (y in 3..5) add(11 to y)
+                for (x in 10..12) add(x to 5)
+            }
+            val secretEntrances = listOf(10 to 6, 11 to 6, 12 to 6)
+            val hiddenZoneTiles = rectTiles(1, 12, 5, 14)
+            val hiddenAccessPath = listOf(6 to 13, 6 to 14)
+            val rocks = listOf(8 to 1, 14 to 7, 11 to 11)
+
+            return buildVariantMap(
+                basePath = mainPath,
+                rocks = rocks,
+                secretPath = secretPath,
+                secretEntrances = secretEntrances,
+                hiddenZoneTiles = hiddenZoneTiles,
+                hiddenZoneRect = RectF(1f, 12f, 6f, 15f),
+                hiddenAccessPath = hiddenAccessPath,
+                startTileX = 1.5f,
+                startTileY = 1.5f,
+                exitRect = RectF(4f, 7f, 5f, 8f)
+            )
+        }
+
+        fun createAllVariants(): List<StoryMap> {
+            return listOf(
+                createVariant1(),
+                createVariant2(),
+                createVariant3(),
+                createVariant4()
+            )
+        }
+
+        private fun buildVariantMap(
+            basePath: Set<Pair<Int, Int>>,
+            rocks: List<Pair<Int, Int>>,
+            secretPath: List<Pair<Int, Int>>,
+            secretEntrances: List<Pair<Int, Int>>,
+            hiddenZoneTiles: List<Pair<Int, Int>>,
+            hiddenZoneRect: RectF,
+            hiddenAccessPath: List<Pair<Int, Int>>,
+            startTileX: Float,
+            startTileY: Float,
+            exitRect: RectF
+        ): StoryMap {
+            val width = 22
+            val height = 16
+            val path = LinkedHashSet<Pair<Int, Int>>()
+            val tiles = Array(width * height) { TileType.GRASS }
+            val hiddenZoneIndex = IntArray(width * height) { -1 }
+            val hiddenZones = arrayListOf(hiddenZoneRect)
+            val hiddenZoneEntrances = LinkedHashSet<Pair<Int, Int>>()
+            val randomSecretEntrances = ArrayList<Pair<Int, Int>>()
+
+            fun idx(x: Int, y: Int) = (y * width) + x
+            fun setTile(x: Int, y: Int, type: TileType) {
+                if (x < 0 || y < 0 || x >= width || y >= height) return
+                tiles[idx(x, y)] = type
+            }
+
+            path.addAll(basePath)
+            path.addAll(secretPath)
+            path.addAll(hiddenZoneTiles)
+            path.addAll(hiddenAccessPath)
+
+            for (y in 0 until height) {
+                for (x in 0 until width) {
+                    setTile(x, y, TileType.GRASS)
+                }
+            }
+
+            path.forEach { (x, y) -> setTile(x, y, TileType.DIRT) }
+
+            path.forEach { (x, y) ->
+                listOf(x - 1 to y, x + 1 to y, x to y - 1, x to y + 1).forEach { (tx, ty) ->
+                    if (!path.contains(tx to ty)) {
+                        setTile(tx, ty, TileType.TREE)
+                    }
+                }
+            }
+
+            rocks.forEach { (x, y) ->
+                if (path.contains(x to y)) setTile(x, y, TileType.ROCK)
+            }
+
+            secretEntrances.forEach { (x, y) ->
+                setTile(x, y, TileType.TREE)
+                randomSecretEntrances.add(x to y)
+            }
+
+            hiddenZoneTiles.forEach { (x, y) ->
+                hiddenZoneIndex[idx(x, y)] = 0
+                setTile(x, y, TileType.DIRT)
+            }
+
+            hiddenAccessPath.forEach { (x, y) ->
+                setTile(x, y, TileType.TREE)
+                hiddenZoneEntrances.add(x to y)
+                hiddenZoneIndex[idx(x, y)] = -1
+            }
+
+            val hiddenZoneSet = hiddenZoneTiles.toSet()
+            val secretPathSet = secretPath.toSet()
+            val hiddenAccessSet = hiddenAccessPath.toSet()
+            val startTile = floor(startTileX).toInt() to floor(startTileY).toInt()
+            val exitTile = floor(exitRect.left).toInt() to floor(exitRect.top).toInt()
+            val mainCandidates = path.filter { tile ->
+                tile != startTile &&
+                    tile != exitTile &&
+                    !secretPathSet.contains(tile) &&
+                    !hiddenZoneSet.contains(tile) &&
+                    !hiddenAccessSet.contains(tile)
+            }
+
+            return StoryMap(
+                width = width,
+                height = height,
+                walkableTiles = path,
+                tileTypes = tiles,
+                hiddenZoneIndex = hiddenZoneIndex,
+                hiddenZones = hiddenZones,
+                hiddenZoneEntrances = hiddenZoneEntrances,
+                secretEntrances = randomSecretEntrances,
+                trophyMainCandidates = mainCandidates,
+                trophySecretCandidates = secretPath,
+                trophyHiddenCandidates = hiddenZoneTiles,
+                startTileX = startTileX,
+                startTileY = startTileY,
+                exitRect = exitRect
+            ).apply { randomizeSecretEntrance() }
+        }
+
+        private fun MutableSet<Pair<Int, Int>>.addHorizontal(xStart: Int, y: Int, xEnd: Int) {
+            val from = minOf(xStart, xEnd)
+            val to = maxOf(xStart, xEnd)
+            for (x in from..to) add(x to y)
+        }
+
+        private fun MutableSet<Pair<Int, Int>>.addVertical(x: Int, yStart: Int, yEnd: Int) {
+            val from = minOf(yStart, yEnd)
+            val to = maxOf(yStart, yEnd)
+            for (y in from..to) add(x to y)
+        }
+
+        private fun rectTiles(xFrom: Int, yFrom: Int, xTo: Int, yTo: Int): List<Pair<Int, Int>> {
+            val list = ArrayList<Pair<Int, Int>>()
+            for (y in yFrom..yTo) {
+                for (x in xFrom..xTo) {
+                    list.add(x to y)
+                }
+            }
+            return list
         }
     }
 }

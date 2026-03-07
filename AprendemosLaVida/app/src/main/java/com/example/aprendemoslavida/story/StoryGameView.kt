@@ -128,6 +128,8 @@ class StoryGameView @JvmOverloads constructor(
         invalidate()
     }
 
+    fun currentMap(): StoryMap = storyMap
+
     fun intersectsExit(): Boolean {
         return RectF(
             playerCenterX - playerHalfSize,

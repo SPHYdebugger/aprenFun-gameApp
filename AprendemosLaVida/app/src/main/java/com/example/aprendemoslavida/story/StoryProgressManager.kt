@@ -2,6 +2,7 @@ package com.example.aprendemoslavida.story
 
 import android.graphics.RectF
 import android.os.SystemClock
+import kotlin.random.Random
 
 private val DEFAULT_GATE_TOPICS: List<StoryTopic> = listOf(
     StoryTopic.NATURAL,
@@ -19,66 +20,14 @@ private val DEFAULT_GATE_TOPICS: List<StoryTopic> = listOf(
 // Tracks gate state, pending questions and per-gate timer.
 class StoryProgressManager(
     private val questionProvider: StoryQuestionProvider,
+    private val storyMap: StoryMap,
     gateTopics: List<StoryTopic> = DEFAULT_GATE_TOPICS
 ) {
     private val gateQuestions = HashMap<Int, StoryQuestion>()
     private val gateStartTimeMs = HashMap<Int, Long>()
     private val topics = if (gateTopics.size == 10) gateTopics else DEFAULT_GATE_TOPICS
 
-    val gates: List<StoryGate> = listOf(
-        StoryGate(
-            id = 0,
-            topic = topics[0],
-            rect = RectF(6f, 1f, 7f, 2f)
-        ),
-        StoryGate(
-            id = 1,
-            topic = topics[1],
-            rect = RectF(13f, 1f, 14f, 2f)
-        ),
-        StoryGate(
-            id = 2,
-            topic = topics[2],
-            rect = RectF(18f, 3f, 19f, 4f)
-        ),
-        StoryGate(
-            id = 3,
-            topic = topics[3],
-            rect = RectF(8f, 4f, 9f, 5f)
-        ),
-        StoryGate(
-            id = 4,
-            topic = topics[4],
-            rect = RectF(4f, 7f, 5f, 8f)
-        ),
-        StoryGate(
-            id = 5,
-            topic = topics[5],
-            rect = RectF(9f, 6f, 10f, 7f),
-            optional = true
-        ),
-        StoryGate(
-            id = 6,
-            topic = topics[6],
-            rect = RectF(16f, 4f, 17f, 5f)
-        ),
-        StoryGate(
-            id = 7,
-            topic = topics[7],
-            rect = RectF(10f, 8f, 11f, 9f)
-        ),
-        StoryGate(
-            id = 8,
-            topic = topics[8],
-            rect = RectF(7f, 11f, 8f, 12f)
-        ),
-        StoryGate(
-            id = 9,
-            topic = topics[9],
-            rect = RectF(15f, 13f, 16f, 14f),
-            optional = true
-        )
-    )
+    val gates: List<StoryGate> = buildRandomizedGates(topics)
 
     fun getGate(gateId: Int): StoryGate? = gates.firstOrNull { it.id == gateId }
 
@@ -111,4 +60,55 @@ class StoryProgressManager(
     fun requiredGatesUnlocked(): Boolean = gates.all { it.optional || it.unlocked }
 
     fun allGatesUnlocked(): Boolean = gates.all { it.unlocked }
+
+    private fun buildRandomizedGates(gateTopics: List<StoryTopic>): List<StoryGate> {
+        val availableMain = storyMap.trophyMainCandidates.shuffled().toMutableList()
+        val used = HashSet<Pair<Int, Int>>()
+
+        val mainTiles = ArrayList<Pair<Int, Int>>(8)
+        while (mainTiles.size < 8 && availableMain.isNotEmpty()) {
+            val tile = availableMain.removeAt(0)
+            if (used.add(tile)) {
+                mainTiles.add(tile)
+            }
+        }
+        while (mainTiles.size < 8) {
+            val fallback = randomFallbackTile(used)
+            used.add(fallback)
+            mainTiles.add(fallback)
+        }
+
+        val secretTile = pickFromPoolOrFallback(storyMap.trophySecretCandidates, used)
+        used.add(secretTile)
+        val hiddenTile = pickFromPoolOrFallback(storyMap.trophyHiddenCandidates, used)
+        used.add(hiddenTile)
+
+        val finalTiles = mainTiles + listOf(secretTile, hiddenTile)
+        return finalTiles.mapIndexed { index, (x, y) ->
+            StoryGate(
+                id = index,
+                topic = gateTopics[index],
+                rect = RectF(x.toFloat(), y.toFloat(), x + 1f, y + 1f),
+                optional = index >= 8
+            )
+        }
+    }
+
+    private fun pickFromPoolOrFallback(
+        pool: List<Pair<Int, Int>>,
+        used: Set<Pair<Int, Int>>
+    ): Pair<Int, Int> {
+        val candidates = pool.filterNot { used.contains(it) }
+        if (candidates.isNotEmpty()) return candidates.random()
+        return randomFallbackTile(used)
+    }
+
+    private fun randomFallbackTile(used: Set<Pair<Int, Int>>): Pair<Int, Int> {
+        val fallbackPool = storyMap.trophyMainCandidates +
+            storyMap.trophySecretCandidates +
+            storyMap.trophyHiddenCandidates
+        val available = fallbackPool.filterNot { used.contains(it) }
+        if (available.isNotEmpty()) return available[Random.nextInt(available.size)]
+        return 1 to 1
+    }
 }

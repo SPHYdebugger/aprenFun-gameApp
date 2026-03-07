@@ -409,6 +409,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         questionProvider = StoryQuestionProvider(this)
         progressManager = StoryProgressManager(
             questionProvider,
+            binding.storyGameView.currentMap(),
             SettingsManager.getStoryGateTopics(this)
         )
         gameStartMs = SystemClock.elapsedRealtime()
