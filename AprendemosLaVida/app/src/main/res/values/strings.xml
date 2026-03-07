@@ -111,6 +111,7 @@
     <string name="eng_q_two_cinemas_town">¿Cómo se dice en inglés: En mi pueblo hay dos cines? 🎬</string>
     <string name="eng_q_fire_station_question">¿Cómo se dice en inglés: Hay una estación de bomberos? 🚒</string>
     <string name="eng_q_museum_city">¿Cómo se dice en inglés: En mi ciudad hay un museo? 🏛️</string>
+    <string name="eng_question_rephrase_interrogative">¿Cómo se realiza la siguiente pregunta?:\n%1$s</string>
 
     <!-- Sociales - Tema 0: Sistema Solar -->
     <string name="social_t0_q1_text">¿Qué es el Sol? ☀️</string>
@@ -202,13 +203,15 @@
     <string name="story_score_format">Puntos: %1$d</string>
     <string name="story_checkpoints_default">Checkpoints: 0/5</string>
     <string name="story_checkpoints_format">Checkpoints: %1$d/%2$d</string>
-    <string name="story_time_default">Tiempo: 05:00</string>
+    <string name="story_time_default">Tiempo: 08:00</string>
     <string name="story_time_format">Tiempo: %1$02d:%2$02d</string>
     <string name="story_checkpoint_title">Trofeo encontrado</string>
     <string name="story_wrong_penalty">Fallo: -25 puntos</string>
     <string name="story_correct_points_format">¡Correcto! +%1$d puntos</string>
     <string name="story_need_all_checkpoints">Debes desbloquear todos los checkpoints</string>
+    <string name="story_need_min_trophies">Necesitas al menos 5 trofeos para entrar a la meta</string>
     <string name="story_completed">¡Has completado el modo historia!</string>
+    <string name="story_exit_summary_title">Resumen de partida</string>
     <string name="story_final_score_format">Puntuación final: %1$d</string>
     <string name="story_world_score_format">Puntuación del mapa: %1$d</string>
     <string name="story_total_score_format">Puntos totales: %1$d</string>
@@ -227,6 +230,19 @@
     <string name="story_final_celebration_text">¡¡ ENHORABUENA\nLO HAS CONSEGIDO !!\n\nSe nota que sabes un montón.\nGracias por ayudarme a llegar hasta el final.\n\nVuelve cuando quieras mejorar tu puntuación...\nBYE</string>
     <string name="story_intro_back">Volver</string>
     <string name="story_theme_selection_title">Selección de temas</string>
+    <string name="story_hidden_menu_title">Menú oculto</string>
+    <string name="story_hidden_menu_topic_button">Temática</string>
+    <string name="story_hidden_menu_time_button">Tiempo de juego</string>
+    <string name="story_game_time_title">Tiempo total modo historia</string>
+    <string name="story_game_time_minutes">Minutos</string>
+    <string name="story_game_time_seconds">Segundos</string>
+    <string name="story_game_time_minutes_hint">0-59</string>
+    <string name="story_game_time_seconds_hint">0-59</string>
+    <string name="story_game_time_help">Introduce minutos y segundos (mínimo 00:10).</string>
+    <string name="story_game_time_save">Guardar</string>
+    <string name="story_game_time_saved">Tiempo de juego guardado</string>
+    <string name="story_game_time_invalid">Valores no válidos</string>
+    <string name="story_game_time_min">El tiempo mínimo es 10 segundos</string>
     <string name="story_restore_random">Restaurar aleatorio</string>
     <string name="story_subject_math_add_sub">Matemáticas (sumas y restas)</string>
     <string name="story_subject_math_multiplication">Matemáticas (multiplicaciones)</string>

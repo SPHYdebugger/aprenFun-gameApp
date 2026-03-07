@@ -61,8 +61,13 @@ class StoryProgressManager(
 
     fun allGatesUnlocked(): Boolean = gates.all { it.unlocked }
 
+    fun unlockedGateCount(): Int = gates.count { it.unlocked }
+
     private fun buildRandomizedGates(gateTopics: List<StoryTopic>): List<StoryGate> {
-        val availableMain = storyMap.trophyMainCandidates.shuffled().toMutableList()
+        val availableMain = storyMap.trophyMainCandidates
+            .filter(::isValidTrophyTile)
+            .shuffled()
+            .toMutableList()
         val used = HashSet<Pair<Int, Int>>()
 
         val mainTiles = ArrayList<Pair<Int, Int>>(8)
@@ -78,9 +83,9 @@ class StoryProgressManager(
             mainTiles.add(fallback)
         }
 
-        val secretTile = pickFromPoolOrFallback(storyMap.trophySecretCandidates, used)
+        val secretTile = pickFromPoolOrFallback(storyMap.trophySecretCandidates.filter(::isValidTrophyTile), used)
         used.add(secretTile)
-        val hiddenTile = pickFromPoolOrFallback(storyMap.trophyHiddenCandidates, used)
+        val hiddenTile = pickFromPoolOrFallback(storyMap.trophyHiddenCandidates.filter(::isValidTrophyTile), used)
         used.add(hiddenTile)
 
         val finalTiles = mainTiles + listOf(secretTile, hiddenTile)
@@ -104,11 +109,18 @@ class StoryProgressManager(
     }
 
     private fun randomFallbackTile(used: Set<Pair<Int, Int>>): Pair<Int, Int> {
-        val fallbackPool = storyMap.trophyMainCandidates +
+        val fallbackPool = (storyMap.trophyMainCandidates +
             storyMap.trophySecretCandidates +
-            storyMap.trophyHiddenCandidates
+            storyMap.trophyHiddenCandidates)
+            .filter(::isValidTrophyTile)
         val available = fallbackPool.filterNot { used.contains(it) }
         if (available.isNotEmpty()) return available[Random.nextInt(available.size)]
         return 1 to 1
+    }
+
+    private fun isValidTrophyTile(tile: Pair<Int, Int>): Boolean {
+        val (x, y) = tile
+        if (!storyMap.isWalkable(x, y)) return false
+        return storyMap.tileTypeAt(x, y) != StoryMap.TileType.TREE
     }
 }

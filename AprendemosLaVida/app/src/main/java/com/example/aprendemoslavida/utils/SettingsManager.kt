@@ -7,10 +7,14 @@ import kotlin.math.roundToInt
 object SettingsManager {
     private const val PREFS_NAME = "aprendemos_prefs"
     private const val KEY_QUESTION_TIME_MS = "question_time_ms"
+    private const val KEY_STORY_GAME_TIME_MS = "story_game_time_ms"
     private const val KEY_STORY_TROPHY_TOPIC_PREFIX = "story_trophy_topic_"
     private const val STORY_TROPHY_COUNT = 10
 
     private const val DEFAULT_QUESTION_TIME_MS = 12000
+    private const val DEFAULT_STORY_GAME_TIME_MS = 8 * 60 * 1000
+    private const val MIN_STORY_GAME_TIME_MS = 10 * 1000
+    private const val MAX_STORY_GAME_TIME_MS = 59 * 60 * 1000 + 59 * 1000
     private val AVAILABLE_TIMES_MS = listOf(8000, 12000, 16000, 20000)
     private val DEFAULT_STORY_TOPICS = listOf(
         StoryTopic.NATURAL,
@@ -37,6 +41,19 @@ object SettingsManager {
         val safeValue = if (AVAILABLE_TIMES_MS.contains(value)) value else DEFAULT_QUESTION_TIME_MS
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putInt(KEY_QUESTION_TIME_MS, safeValue).apply()
+    }
+
+    fun getStoryGameTimeMs(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val value = prefs.getInt(KEY_STORY_GAME_TIME_MS, DEFAULT_STORY_GAME_TIME_MS)
+        return value.coerceIn(MIN_STORY_GAME_TIME_MS, MAX_STORY_GAME_TIME_MS)
+    }
+
+    fun setStoryGameTimeMs(context: Context, valueMs: Int) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit()
+            .putInt(KEY_STORY_GAME_TIME_MS, valueMs.coerceIn(MIN_STORY_GAME_TIME_MS, MAX_STORY_GAME_TIME_MS))
+            .apply()
     }
 
     fun maxPointsForQuestionTime(questionTimeMs: Int): Int {

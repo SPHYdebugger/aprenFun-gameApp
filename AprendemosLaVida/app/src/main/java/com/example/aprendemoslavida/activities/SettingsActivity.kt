@@ -17,7 +17,7 @@ class SettingsActivity : BaseActivity() {
     private var hiddenMenuOpened = false
     private val openHiddenMenuRunnable = Runnable {
         hiddenMenuOpened = true
-        startActivity(Intent(this, StoryThemeSelectionActivity::class.java))
+        startActivity(Intent(this, StoryAdminMenuActivity::class.java))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

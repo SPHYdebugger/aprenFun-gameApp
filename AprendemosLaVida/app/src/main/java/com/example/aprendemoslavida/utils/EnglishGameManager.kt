@@ -52,7 +52,7 @@ class EnglishGameManager(context: Context) {
         fun allQuestions(context: Context): List<Question> = buildQuestions(context)
 
         private fun buildQuestions(context: Context): List<Question> {
-            return listOf(
+            val baseQuestions = listOf(
             Question("What place can you watch a movie? 🎬", listOf("Cinema", "Hospital", "Post office", "Museum"), 0),
             Question("Where do firefighters work? 🚒", listOf("Fire station", "Cinema", "School", "Museum"), 0),
             Question("Where do you send letters? ✉️", listOf("Post office", "Hospital", "Cinema", "Swimming pool"), 0),
@@ -297,6 +297,24 @@ class EnglishGameManager(context: Context) {
                 0
             )
             )
+            return baseQuestions.map { question ->
+                question.copy(text = normalizeQuestionTextForPrompt(context, question.text))
+            }
+        }
+
+        fun normalizeQuestionTextForPrompt(context: Context, original: String): String {
+            val trimmed = original.trim()
+            val lower = trimmed.lowercase()
+            val translationPrefixes = listOf(
+                "¿cómo se dice en inglés:",
+                "como se dice en inglés:",
+                "como se di en inglés:"
+            )
+            val isTranslationPrompt = translationPrefixes.any { lower.startsWith(it) }
+            if (!isTranslationPrompt || !trimmed.contains("?")) return trimmed
+
+            val targetSentence = trimmed.substringAfter(":", "").trim().ifEmpty { trimmed }
+            return context.getString(R.string.eng_question_rephrase_interrogative, targetSentence)
         }
     }
 }

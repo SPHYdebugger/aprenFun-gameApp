@@ -56,7 +56,11 @@ class StoryQuestionProvider(private val context: Context) {
                     correctIndex = q.correctIndex
                 )
             }
-            StoryTopic.ENGLISH -> EnglishGameManager.allQuestions(context).map { fromClassicQuestion(it) }
+            StoryTopic.ENGLISH -> EnglishGameManager.allQuestions(context).map { q ->
+                fromClassicQuestion(
+                    q.copy(text = EnglishGameManager.normalizeQuestionTextForPrompt(context, q.text))
+                )
+            }
             StoryTopic.SOCIAL -> SocialGameManager.allQuestions(context).map { fromClassicQuestion(it) }
         }.shuffled()
 

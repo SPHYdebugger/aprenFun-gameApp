@@ -33,7 +33,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     private val storyMaps: List<StoryMap> = listOf(StoryMap.createDefault()) + StoryMap.createAllVariants()
     private val scoreManager = StoryScoreManager()
     private var countdownTimer: CountDownTimer? = null
-    private val totalTimeMs = 4 * 60 * 1000L
+    private var totalTimeMs = 4 * 60 * 1000L
     private var timeLeftMs: Long = totalTimeMs
     private var warningShown: Boolean = false
     private val tone = ToneGenerator(AudioManager.STREAM_MUSIC, 80)
@@ -97,8 +97,8 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
 
     override fun onExitReached() {
         if (!gameStarted) return
-        if (!progressManager.requiredGatesUnlocked()) {
-            showStoryToast(getString(R.string.story_need_all_checkpoints))
+        if (progressManager.unlockedGateCount() < 5) {
+            showStoryToast(getString(R.string.story_need_min_trophies))
             return
         }
 
@@ -156,7 +156,13 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
             .setTitle(getString(R.string.exit_confirm_title))
             .setMessage(getString(R.string.exit_confirm_game_message))
             .setPositiveButton(getString(R.string.exit_confirm_yes)) { _, _ ->
-                finish()
+                countdownTimer?.cancel()
+                binding.joystickView.resetStick()
+                showWorldSummaryDialog(
+                    timeUp = false,
+                    forceFinishOnOk = true,
+                    titleOverride = getString(R.string.story_exit_summary_title)
+                )
             }
             .setNegativeButton(getString(R.string.exit_confirm_no)) { _, _ ->
                 exitingDialog = false
@@ -183,11 +189,19 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         finish()
     }
 
-    private fun showWorldSummaryDialog(timeUp: Boolean) {
+    private fun showWorldSummaryDialog(
+        timeUp: Boolean,
+        forceFinishOnOk: Boolean = false,
+        titleOverride: String? = null
+    ) {
         val worldScore = (scoreManager.score - mapStartScore).coerceAtLeast(0)
-        val completedWorlds = if (timeUp) currentMapIndex else currentMapIndex + 1
+        val completedWorlds = when {
+            timeUp -> currentMapIndex
+            forceFinishOnOk -> currentMapIndex
+            else -> currentMapIndex + 1
+        }
         val summaryView = buildWorldSummaryView(worldScore, completedWorlds)
-        val title = if (timeUp) {
+        val title = titleOverride ?: if (timeUp) {
             getString(R.string.story_time_up_uppercase)
         } else {
             getString(R.string.story_completed)
@@ -197,7 +211,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
             .setTitle(title)
             .setView(summaryView)
             .setPositiveButton(getString(R.string.ok_button)) { _, _ ->
-                onSummaryAccepted(timeUp = timeUp)
+                onSummaryAccepted(timeUp = timeUp, forceFinishOnOk = forceFinishOnOk)
             }
             .setCancelable(false)
             .show()
@@ -205,8 +219,8 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(getColor(R.color.primary))
     }
 
-    private fun onSummaryAccepted(timeUp: Boolean) {
-        if (timeUp) {
+    private fun onSummaryAccepted(timeUp: Boolean, forceFinishOnOk: Boolean) {
+        if (timeUp || forceFinishOnOk) {
             goToResults()
             return
         }
@@ -527,6 +541,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     private fun startStoryGame() {
         gameStarted = true
         currentMapIndex = 0
+        totalTimeMs = SettingsManager.getStoryGameTimeMs(this).toLong()
         timeLeftMs = totalTimeMs
         warningShown = false
         questionProvider = StoryQuestionProvider(this)
