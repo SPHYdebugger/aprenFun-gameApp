@@ -2,6 +2,9 @@ package com.example.aprendemoslavida.activities
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.view.MotionEvent
 import androidx.appcompat.app.AlertDialog
 import com.example.aprendemoslavida.R
 import com.example.aprendemoslavida.databinding.ActivitySettingsBinding
@@ -10,6 +13,12 @@ import com.example.aprendemoslavida.utils.SettingsManager
 
 class SettingsActivity : BaseActivity() {
     private lateinit var binding: ActivitySettingsBinding
+    private val longPressHandler = Handler(Looper.getMainLooper())
+    private var hiddenMenuOpened = false
+    private val openHiddenMenuRunnable = Runnable {
+        hiddenMenuOpened = true
+        startActivity(Intent(this, StoryThemeSelectionActivity::class.java))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -22,7 +31,24 @@ class SettingsActivity : BaseActivity() {
         binding.changeLanguageButton.setOnClickListener { toggleLanguage() }
         binding.questionTimeButton.setOnClickListener { showQuestionTimeDialog() }
 
-        binding.backButton.setOnClickListener { finish() }
+        binding.backButton.setOnTouchListener { _, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    hiddenMenuOpened = false
+                    longPressHandler.postDelayed(openHiddenMenuRunnable, 8_000L)
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    longPressHandler.removeCallbacks(openHiddenMenuRunnable)
+                }
+            }
+            false
+        }
+
+        binding.backButton.setOnClickListener {
+            if (!hiddenMenuOpened) {
+                finish()
+            }
+        }
     }
 
     private fun toggleLanguage() {
@@ -68,5 +94,10 @@ class SettingsActivity : BaseActivity() {
             .show()
 
         dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(getColor(R.color.accent))
+    }
+
+    override fun onDestroy() {
+        longPressHandler.removeCallbacks(openHiddenMenuRunnable)
+        super.onDestroy()
     }
 }

@@ -221,5 +221,22 @@
     <string name="story_intro_text">Hola, me llamo Sofía.\nNecesito que me ayudes a llegar al final del camino.\nResponde correctamente para obtener más puntos.\n\n¿ Te atreves ?</string>
     <string name="story_intro_no_text">Vaya que pena, pues hasta otra...\nCHAO</string>
     <string name="story_intro_back">Volver</string>
+    <string name="story_theme_selection_title">Selección de temas</string>
+    <string name="story_restore_random">Restaurar aleatorio</string>
+    <string name="story_subject_math_add_sub">Matemáticas (sumas y restas)</string>
+    <string name="story_subject_math_multiplication">Matemáticas (multiplicaciones)</string>
+    <string name="story_subject_natural">Naturales</string>
+    <string name="story_subject_social">Sociales</string>
+    <string name="story_subject_english">Inglés</string>
+    <string name="story_trophy_1">Trofeo 1</string>
+    <string name="story_trophy_2">Trofeo 2</string>
+    <string name="story_trophy_3">Trofeo 3</string>
+    <string name="story_trophy_4">Trofeo 4</string>
+    <string name="story_trophy_5">Trofeo 5</string>
+    <string name="story_trophy_6">Trofeo 6</string>
+    <string name="story_trophy_7">Trofeo 7</string>
+    <string name="story_trophy_8">Trofeo 8</string>
+    <string name="story_trophy_9">Trofeo 9</string>
+    <string name="story_trophy_10">Trofeo 10</string>
 </resources>
 

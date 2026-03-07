@@ -3,61 +3,78 @@ package com.example.aprendemoslavida.story
 import android.graphics.RectF
 import android.os.SystemClock
 
+private val DEFAULT_GATE_TOPICS: List<StoryTopic> = listOf(
+    StoryTopic.NATURAL,
+    StoryTopic.MATH_MULTIPLICATION,
+    StoryTopic.MATH_ADD_SUB,
+    StoryTopic.ENGLISH,
+    StoryTopic.SOCIAL,
+    StoryTopic.NATURAL,
+    StoryTopic.MATH_ADD_SUB,
+    StoryTopic.ENGLISH,
+    StoryTopic.SOCIAL,
+    StoryTopic.NATURAL
+)
+
 // Tracks gate state, pending questions and per-gate timer.
-class StoryProgressManager(private val questionProvider: StoryQuestionProvider) {
+class StoryProgressManager(
+    private val questionProvider: StoryQuestionProvider,
+    gateTopics: List<StoryTopic> = DEFAULT_GATE_TOPICS
+) {
     private val gateQuestions = HashMap<Int, StoryQuestion>()
     private val gateStartTimeMs = HashMap<Int, Long>()
+    private val topics = if (gateTopics.size == 10) gateTopics else DEFAULT_GATE_TOPICS
 
     val gates: List<StoryGate> = listOf(
         StoryGate(
             id = 0,
-            topic = StoryTopic.NATURAL,
+            topic = topics[0],
             rect = RectF(6f, 1f, 7f, 2f)
         ),
         StoryGate(
             id = 1,
-            topic = StoryTopic.MATH_MULTIPLICATION,
+            topic = topics[1],
             rect = RectF(13f, 1f, 14f, 2f)
         ),
         StoryGate(
             id = 2,
-            topic = StoryTopic.MATH_ADD_SUB,
+            topic = topics[2],
             rect = RectF(18f, 3f, 19f, 4f)
         ),
         StoryGate(
             id = 3,
-            topic = StoryTopic.ENGLISH,
+            topic = topics[3],
             rect = RectF(8f, 4f, 9f, 5f)
         ),
         StoryGate(
             id = 4,
-            topic = StoryTopic.SOCIAL,
+            topic = topics[4],
             rect = RectF(4f, 7f, 5f, 8f)
         ),
         StoryGate(
             id = 5,
-            topic = StoryTopic.NATURAL,
+            topic = topics[5],
             rect = RectF(9f, 6f, 10f, 7f),
             optional = true
         ),
         StoryGate(
             id = 6,
-            topic = StoryTopic.MATH_ADD_SUB,
+            topic = topics[6],
             rect = RectF(16f, 4f, 17f, 5f)
         ),
         StoryGate(
             id = 7,
-            topic = StoryTopic.ENGLISH,
+            topic = topics[7],
             rect = RectF(10f, 8f, 11f, 9f)
         ),
         StoryGate(
             id = 8,
-            topic = StoryTopic.SOCIAL,
+            topic = topics[8],
             rect = RectF(7f, 11f, 8f, 12f)
         ),
         StoryGate(
             id = 9,
-            topic = StoryTopic.NATURAL,
+            topic = topics[9],
             rect = RectF(15f, 13f, 16f, 14f),
             optional = true
         )

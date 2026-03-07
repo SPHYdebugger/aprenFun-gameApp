@@ -20,6 +20,7 @@ import com.example.aprendemoslavida.story.StoryQuestionDialogFragment
 import com.example.aprendemoslavida.story.StoryQuestionProvider
 import com.example.aprendemoslavida.story.StoryScoreManager
 import com.example.aprendemoslavida.utils.ScoreManager
+import com.example.aprendemoslavida.utils.SettingsManager
 
 // Hosts the Zelda-like mode and coordinates map, gates, questions and scoring.
 class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionDialogFragment.Listener {
@@ -406,7 +407,10 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     private fun startStoryGame() {
         gameStarted = true
         questionProvider = StoryQuestionProvider(this)
-        progressManager = StoryProgressManager(questionProvider)
+        progressManager = StoryProgressManager(
+            questionProvider,
+            SettingsManager.getStoryGateTopics(this)
+        )
         gameStartMs = SystemClock.elapsedRealtime()
         binding.storyGameView.setGates(progressManager.gates)
         binding.storyGameView.randomizeSecretEntrance()
