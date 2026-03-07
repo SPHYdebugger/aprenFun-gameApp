@@ -210,6 +210,10 @@
     <string name="story_need_all_checkpoints">Debes desbloquear todos os checkpoints</string>
     <string name="story_completed">Completaches o modo historia!</string>
     <string name="story_final_score_format">Puntuación final: %1$d</string>
+    <string name="story_world_score_format">Puntuación do mapa: %1$d</string>
+    <string name="story_total_score_format">Puntos totais: %1$d</string>
+    <string name="story_progress_title">Progreso</string>
+    <string name="story_time_up_uppercase">SE HA AGOTADO EL TIEMPO</string>
     <string name="story_trophies_label">Trofeos obtidos:</string>
     <string name="story_time_warning">O tempo estase acabando, chega canto antes á meta</string>
     <string name="story_time_up_title">Tempo esgotado</string>
@@ -219,6 +223,7 @@
     <string name="story_intro_no">NO</string>
     <string name="story_intro_text">Hola, me llamo Sofía.\nNecesito que me ayudes a llegar al final del camino.\nResponde correctamente para obtener más puntos.\n\n¿ Te atreves ?</string>
     <string name="story_intro_no_text">Vaya que pena, pues hasta otra...\nCHAO</string>
+    <string name="story_final_celebration_text">¡¡ ENHORABUENA\nLO HAS CONSEGIDO !!\n\nSe nota que sabes un montón.\nGracias por ayudarme a llegar hasta el final.\n\nVuelve cuando quieras mejorar tu puntuación...\nBYE</string>
     <string name="story_intro_back">Volver</string>
     <string name="story_theme_selection_title">Selección de temas</string>
     <string name="story_restore_random">Restaurar aleatorio</string>

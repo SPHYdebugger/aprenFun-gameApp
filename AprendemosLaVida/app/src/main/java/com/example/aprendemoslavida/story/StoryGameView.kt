@@ -37,7 +37,7 @@ class StoryGameView @JvmOverloads constructor(
 
     var listener: Listener? = null
 
-    private val storyMap = StoryMap.createDefault()
+    private var storyMap = StoryMap.createDefault()
     private var gates: List<StoryGate> = emptyList()
 
     private var lastFrameMs: Long = System.currentTimeMillis()
@@ -129,6 +129,19 @@ class StoryGameView @JvmOverloads constructor(
     }
 
     fun currentMap(): StoryMap = storyMap
+
+    fun setMap(map: StoryMap) {
+        storyMap = map
+        gates = emptyList()
+        pressedDirections.clear()
+        analogInputX = 0f
+        analogInputY = 0f
+        lastBlockedGateId = null
+        exitNotified = false
+        playerCenterX = storyMap.startTileX
+        playerCenterY = storyMap.startTileY
+        invalidate()
+    }
 
     fun intersectsExit(): Boolean {
         return RectF(

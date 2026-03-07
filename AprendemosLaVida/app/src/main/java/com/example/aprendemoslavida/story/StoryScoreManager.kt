@@ -7,6 +7,10 @@ class StoryScoreManager {
     var score: Int = 0
         private set
 
+    fun reset() {
+        score = 0
+    }
+
     fun onWrongAttempt(): Int {
         score -= 25
         return -25

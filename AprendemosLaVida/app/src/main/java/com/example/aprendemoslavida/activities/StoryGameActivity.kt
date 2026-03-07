@@ -1,20 +1,23 @@
 package com.example.aprendemoslavida.activities
 
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import android.view.View
 import android.view.Gravity
+import android.view.View
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
-import android.os.CountDownTimer
 import android.media.AudioManager
 import android.media.ToneGenerator
+import android.os.CountDownTimer
 import com.example.aprendemoslavida.R
 import com.example.aprendemoslavida.databinding.ActivityStoryGameBinding
 import com.example.aprendemoslavida.story.StoryGameView
+import com.example.aprendemoslavida.story.StoryMap
 import com.example.aprendemoslavida.story.StoryProgressManager
 import com.example.aprendemoslavida.story.StoryQuestionDialogFragment
 import com.example.aprendemoslavida.story.StoryQuestionProvider
@@ -27,6 +30,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     private lateinit var binding: ActivityStoryGameBinding
     private lateinit var progressManager: StoryProgressManager
     private lateinit var questionProvider: StoryQuestionProvider
+    private val storyMaps: List<StoryMap> = listOf(StoryMap.createDefault()) + StoryMap.createAllVariants()
     private val scoreManager = StoryScoreManager()
     private var countdownTimer: CountDownTimer? = null
     private val totalTimeMs = 4 * 60 * 1000L
@@ -39,6 +43,9 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     private var exitingDialog: Boolean = false
     private var gameStarted: Boolean = false
     private var introDeclined: Boolean = false
+    private var currentMapIndex: Int = 0
+    private var mapStartScore: Int = 0
+    private var showingFinalCelebration: Boolean = false
     private val typewriterHandler = Handler(Looper.getMainLooper())
     private var typewriterRunnable: Runnable? = null
     private var typewriterFullText: String? = null
@@ -69,6 +76,9 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
                     finish()
                     return
                 }
+                if (showingFinalCelebration) {
+                    return
+                }
                 showExitDialog()
             }
         })
@@ -93,7 +103,11 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         }
 
         countdownTimer?.cancel()
-        showCompletionDialog()
+        if (currentMapIndex == storyMaps.lastIndex && timeLeftMs > 0L) {
+            showFinalCelebration()
+        } else {
+            showWorldSummaryDialog(timeUp = false)
+        }
     }
 
     override fun onStoryQuestionAnswered(gateId: Int, selectedIndex: Int) {
@@ -162,25 +176,73 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         val intent = Intent(this, ResultActivity::class.java).apply {
             putExtra(ResultActivity.EXTRA_SCORE, finalScore)
             putExtra(ResultActivity.EXTRA_TOTAL_TIME, totalTime)
-            putExtra(ResultActivity.EXTRA_TOTAL_QUESTIONS, if (gameStarted) progressManager.gates.size else 0)
+            putExtra(ResultActivity.EXTRA_TOTAL_QUESTIONS, if (gameStarted) storyMaps.size * 10 else 0)
             putExtra(ResultActivity.EXTRA_GAME_MODE, ScoreManager.MODE_STORY)
         }
         startActivity(intent)
         finish()
     }
 
-    private fun showCompletionDialog() {
-        val trophiesView = buildTrophiesView()
+    private fun showWorldSummaryDialog(timeUp: Boolean) {
+        val worldScore = (scoreManager.score - mapStartScore).coerceAtLeast(0)
+        val completedWorlds = if (timeUp) currentMapIndex else currentMapIndex + 1
+        val summaryView = buildWorldSummaryView(worldScore, completedWorlds)
+        val title = if (timeUp) {
+            getString(R.string.story_time_up_uppercase)
+        } else {
+            getString(R.string.story_completed)
+        }
+
         val dialog = AlertDialog.Builder(this, R.style.ThemeOverlay_Aprendemos_AlertDialog)
-            .setTitle(getString(R.string.story_completed))
-            .setView(trophiesView)
+            .setTitle(title)
+            .setView(summaryView)
             .setPositiveButton(getString(R.string.ok_button)) { _, _ ->
-                goToResults()
+                onSummaryAccepted(timeUp = timeUp)
             }
             .setCancelable(false)
             .show()
 
         dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(getColor(R.color.primary))
+    }
+
+    private fun onSummaryAccepted(timeUp: Boolean) {
+        if (timeUp) {
+            goToResults()
+            return
+        }
+
+        val hasNextMap = currentMapIndex < storyMaps.lastIndex
+        val hasTimeLeft = timeLeftMs > 0L
+        if (!hasNextMap || !hasTimeLeft) {
+            goToResults()
+            return
+        }
+
+        currentMapIndex += 1
+        loadMap(currentMapIndex)
+        startCountdown()
+    }
+
+    private fun showFinalCelebration() {
+        if (showingFinalCelebration) return
+        showingFinalCelebration = true
+        binding.storyGameView.setQuestionBlocking(true)
+        binding.joystickView.resetStick()
+        binding.celebrationText.text = getString(R.string.story_final_celebration_text)
+        binding.celebrationOverlay.visibility = View.VISIBLE
+        binding.confettiView.start()
+        binding.celebrationOverlay.setOnClickListener {
+            hideFinalCelebration()
+            showWorldSummaryDialog(timeUp = false)
+        }
+    }
+
+    private fun hideFinalCelebration() {
+        if (!showingFinalCelebration) return
+        showingFinalCelebration = false
+        binding.confettiView.stop()
+        binding.celebrationOverlay.visibility = View.GONE
+        binding.celebrationOverlay.setOnClickListener(null)
     }
 
     private val hideStoryToastRunnable = Runnable {
@@ -198,7 +260,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         binding.storyToast.postDelayed(hideStoryToastRunnable, 1400L)
     }
 
-    private fun buildTrophiesView(): android.view.View {
+    private fun buildWorldSummaryView(worldScore: Int, completedWorlds: Int): android.view.View {
         val padding = dp(16)
         val container = android.widget.LinearLayout(this).apply {
             orientation = android.widget.LinearLayout.VERTICAL
@@ -206,8 +268,14 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         }
 
         val message = android.widget.TextView(this).apply {
-            text = getString(R.string.story_final_score_format, scoreManager.score)
+            text = getString(R.string.story_world_score_format, worldScore)
             setTextColor(getColor(R.color.text_primary))
+        }
+
+        val totalMessage = android.widget.TextView(this).apply {
+            text = getString(R.string.story_total_score_format, scoreManager.score)
+            setTextColor(getColor(R.color.text_primary))
+            setPadding(0, dp(4), 0, 0)
         }
 
         val label = android.widget.TextView(this).apply {
@@ -224,6 +292,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         )
 
         container.addView(message)
+        container.addView(totalMessage)
         container.addView(label)
         rows.forEach { rowTrophies ->
             val row = android.widget.LinearLayout(this).apply {
@@ -243,7 +312,62 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
             }
             container.addView(row)
         }
+
+        container.addView(buildProgressSection(completedWorlds))
         return container
+    }
+
+    private fun buildProgressSection(completedWorlds: Int): android.view.View {
+        val wrapper = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(0, dp(14), 0, 0)
+        }
+
+        val title = android.widget.TextView(this).apply {
+            text = getString(R.string.story_progress_title)
+            setTextColor(getColor(R.color.text_primary))
+            setPadding(0, 0, 0, dp(8))
+        }
+        wrapper.addView(title)
+
+        val row = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+
+        val dotSize = dp(14)
+        val lineHeight = dp(4)
+        val lineWidth = dp(36)
+        val doneColor = Color.parseColor("#33AA33")
+        val pendingColor = Color.parseColor("#E53935")
+        val safeCompleted = completedWorlds.coerceIn(0, storyMaps.size)
+
+        for (i in 0 until storyMaps.size) {
+            val dot = View(this).apply {
+                background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(if (i < safeCompleted) doneColor else pendingColor)
+                }
+                layoutParams = android.widget.LinearLayout.LayoutParams(dotSize, dotSize)
+            }
+            row.addView(dot)
+
+            if (i < storyMaps.lastIndex) {
+                val line = View(this).apply {
+                    background = GradientDrawable().apply {
+                        shape = GradientDrawable.RECTANGLE
+                        cornerRadius = lineHeight / 2f
+                        setColor(if (i < safeCompleted - 1) doneColor else pendingColor)
+                    }
+                    layoutParams = android.widget.LinearLayout.LayoutParams(lineWidth, lineHeight).apply {
+                        gravity = Gravity.CENTER_VERTICAL
+                    }
+                }
+                row.addView(line)
+            }
+        }
+        wrapper.addView(row)
+        return wrapper
     }
 
     private fun buildTrophyBitmap(sizePx: Int, colored: Boolean): android.graphics.Bitmap {
@@ -311,11 +435,13 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
 
     private fun startCountdown() {
         countdownTimer?.cancel()
-        timeLeftMs = totalTimeMs
-        warningShown = false
+        if (timeLeftMs <= 0L) {
+            onTimeUp()
+            return
+        }
         updateHud()
 
-        countdownTimer = object : CountDownTimer(totalTimeMs, 1000L) {
+        countdownTimer = object : CountDownTimer(timeLeftMs, 1000L) {
             override fun onTick(millisUntilFinished: Long) {
                 timeLeftMs = millisUntilFinished
                 if (!warningShown && timeLeftMs <= 60_000L) {
@@ -351,22 +477,16 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         binding.storyGameView.setQuestionBlocking(true)
         binding.joystickView.resetStick()
         countdownTimer?.cancel()
-        val halfScore = (scoreManager.score / 2).coerceAtLeast(0)
-        val dialog = AlertDialog.Builder(this, R.style.ThemeOverlay_Aprendemos_AlertDialog)
-            .setTitle(getString(R.string.story_time_up_title))
-            .setMessage(getString(R.string.story_time_up_message))
-            .setPositiveButton(getString(R.string.ok_button)) { _, _ ->
-                goToResults(halfScore)
-            }
-            .setCancelable(false)
-            .show()
-
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(getColor(R.color.primary))
+        timeLeftMs = 0L
+        binding.timeText.setTextColor(getColor(R.color.text_primary))
+        updateHud()
+        showWorldSummaryDialog(timeUp = true)
     }
 
     override fun onDestroy() {
         countdownTimer?.cancel()
         cancelTypewriter()
+        hideFinalCelebration()
         tone.release()
         super.onDestroy()
     }
@@ -406,23 +526,36 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
 
     private fun startStoryGame() {
         gameStarted = true
+        currentMapIndex = 0
+        timeLeftMs = totalTimeMs
+        warningShown = false
         questionProvider = StoryQuestionProvider(this)
-        progressManager = StoryProgressManager(
-            questionProvider,
-            binding.storyGameView.currentMap(),
-            SettingsManager.getStoryGateTopics(this)
-        )
         gameStartMs = SystemClock.elapsedRealtime()
-        binding.storyGameView.setGates(progressManager.gates)
-        binding.storyGameView.randomizeSecretEntrance()
-        binding.storyGameView.resetPlayerPosition()
-        binding.storyGameView.setQuestionBlocking(false)
+        scoreManager.reset()
+        loadMap(currentMapIndex)
         binding.topBar.visibility = View.VISIBLE
         binding.mapContainer.visibility = View.VISIBLE
         binding.controlsContainer.visibility = View.VISIBLE
         binding.timeText.setTextColor(getColor(R.color.text_primary))
         updateHud()
         startCountdown()
+    }
+
+    private fun loadMap(index: Int) {
+        val map = storyMaps[index]
+        mapStartScore = scoreManager.score
+        progressManager = StoryProgressManager(
+            questionProvider,
+            map,
+            SettingsManager.getStoryGateTopics(this)
+        )
+        currentDialogGateId = null
+        exitingDialog = false
+        binding.storyGameView.setMap(map)
+        binding.storyGameView.setGates(progressManager.gates)
+        binding.storyGameView.randomizeSecretEntrance()
+        binding.storyGameView.setQuestionBlocking(false)
+        binding.joystickView.resetStick()
     }
 
     private fun startTypewriter(text: String, onFinished: (() -> Unit)? = null) {
