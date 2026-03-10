@@ -64,6 +64,7 @@ class StoryQuestionProvider(private val context: Context) {
             }
             StoryTopic.SOCIAL -> SocialGameManager.allQuestions(context).map { fromClassicQuestion(it) }
             StoryTopic.LANGUAGE -> LanguageGameManager.allQuestions(context).map { fromClassicQuestion(it) }
+            StoryTopic.CASTLES -> emptyList()
         }.shuffled()
 
         return questions.toMutableList()

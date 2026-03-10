@@ -37,10 +37,10 @@ class ResultActivity : BaseActivity() {
         binding.playAgainButton.setOnClickListener {
             val replayIntent = when (mode) {
                 ScoreManager.MODE_MATH -> {
-                    if (mathType == MathTopicsActivity.TYPE_ADD_SUB) {
-                        Intent(this, AddSubMathGameActivity::class.java)
-                    } else {
-                        Intent(this, MathGameActivity::class.java)
+                    when (mathType) {
+                        MathTopicsActivity.TYPE_ADD_SUB -> Intent(this, AddSubMathGameActivity::class.java)
+                        MathTopicsActivity.TYPE_ADD_SUB_CASTLES -> Intent(this, TorresActivity::class.java)
+                        else -> Intent(this, MathGameActivity::class.java)
                     }
                 }
                 ScoreManager.MODE_ENGLISH -> Intent(this, EnglishGameActivity::class.java)

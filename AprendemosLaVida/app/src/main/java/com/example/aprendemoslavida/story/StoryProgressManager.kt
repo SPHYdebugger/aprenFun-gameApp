@@ -10,11 +10,11 @@ private val DEFAULT_GATE_TOPICS: List<StoryTopic> = listOf(
     StoryTopic.ENGLISH,
     StoryTopic.SOCIAL,
     StoryTopic.LANGUAGE,
-    StoryTopic.NATURAL,
+    StoryTopic.CASTLES,
     StoryTopic.MATH_MULTIPLICATION,
     StoryTopic.ENGLISH,
     StoryTopic.SOCIAL,
-    StoryTopic.LANGUAGE
+    StoryTopic.CASTLES
 )
 
 // Tracks gate state, pending questions and per-gate timer.

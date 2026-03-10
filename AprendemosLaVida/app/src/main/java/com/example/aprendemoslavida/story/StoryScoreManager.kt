@@ -23,4 +23,8 @@ class StoryScoreManager {
         score += gained
         return gained
     }
+
+    fun addPoints(points: Int) {
+        score += points
+    }
 }

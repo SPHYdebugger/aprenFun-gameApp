@@ -7,5 +7,6 @@ enum class StoryTopic {
     MATH_ADD_SUB,
     ENGLISH,
     SOCIAL,
-    LANGUAGE
+    LANGUAGE,
+    CASTLES
 }

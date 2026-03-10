@@ -6,8 +6,8 @@ import kotlin.random.Random
 object MathMultiplicationQuestionBank {
     fun allQuestions(): List<MathQuestion> {
         val allPairs = ArrayList<Pair<Int, Int>>(50)
-        for (a in 1..5) {
-            for (b in 1..10) {
+        for (a in 2..9) {
+            for (b in 2..10) {
                 allPairs.add(a to b)
             }
         }

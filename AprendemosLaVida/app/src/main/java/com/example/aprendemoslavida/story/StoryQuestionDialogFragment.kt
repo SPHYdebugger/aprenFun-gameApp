@@ -4,6 +4,7 @@ import android.app.Dialog
 import android.os.Bundle
 import android.util.TypedValue
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.core.os.bundleOf
 import androidx.fragment.app.DialogFragment
@@ -51,6 +52,11 @@ class StoryQuestionDialogFragment : DialogFragment() {
             container.addView(button, params)
         }
 
+        val scrollView = ScrollView(requireContext()).apply {
+            isFillViewport = true
+            addView(container)
+        }
+
         val titleView = TextView(requireContext()).apply {
             text = getString(com.example.aprendemoslavida.R.string.story_checkpoint_title)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 20f)
@@ -60,7 +66,7 @@ class StoryQuestionDialogFragment : DialogFragment() {
 
         return MaterialAlertDialogBuilder(requireContext())
             .setCustomTitle(titleView)
-            .setView(container)
+            .setView(scrollView)
             .create()
     }
 

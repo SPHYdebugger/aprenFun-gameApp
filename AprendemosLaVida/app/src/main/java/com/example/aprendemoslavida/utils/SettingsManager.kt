@@ -26,18 +26,20 @@ object SettingsManager {
         StoryTopic.ENGLISH,
         StoryTopic.SOCIAL,
         StoryTopic.LANGUAGE,
-        StoryTopic.NATURAL,
+        StoryTopic.CASTLES,
         StoryTopic.MATH_MULTIPLICATION,
         StoryTopic.ENGLISH,
         StoryTopic.SOCIAL,
-        StoryTopic.LANGUAGE
+        StoryTopic.CASTLES
     )
     private val STORY_RANDOM_TOPIC_POOL = listOf(
         StoryTopic.NATURAL,
+        StoryTopic.MATH_ADD_SUB,
         StoryTopic.MATH_MULTIPLICATION,
         StoryTopic.SOCIAL,
         StoryTopic.ENGLISH,
-        StoryTopic.LANGUAGE
+        StoryTopic.LANGUAGE,
+        StoryTopic.CASTLES
     )
 
     fun availableQuestionTimesMs(): List<Int> = AVAILABLE_TIMES_MS

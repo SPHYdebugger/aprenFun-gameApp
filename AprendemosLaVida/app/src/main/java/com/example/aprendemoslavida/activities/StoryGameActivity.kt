@@ -19,17 +19,19 @@ import android.content.res.ColorStateList
 import com.example.aprendemoslavida.R
 import com.example.aprendemoslavida.databinding.ActivityStoryGameBinding
 import com.example.aprendemoslavida.story.StoryGameView
+import com.example.aprendemoslavida.story.StoryCastleDialogFragment
 import com.example.aprendemoslavida.story.StoryMap
 import com.example.aprendemoslavida.story.StoryProgressManager
 import com.example.aprendemoslavida.story.StoryQuestionDialogFragment
 import com.example.aprendemoslavida.story.StoryQuestionProvider
 import com.example.aprendemoslavida.story.StoryScoreManager
+import com.example.aprendemoslavida.story.StoryTopic
 import com.example.aprendemoslavida.utils.ScoreManager
 import com.example.aprendemoslavida.utils.SettingsManager
 import kotlin.random.Random
 
 // Hosts the Zelda-like mode and coordinates map, gates, questions and scoring.
-class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionDialogFragment.Listener {
+class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionDialogFragment.Listener, StoryCastleDialogFragment.Listener {
     private lateinit var binding: ActivityStoryGameBinding
     private lateinit var progressManager: StoryProgressManager
     private lateinit var questionProvider: StoryQuestionProvider
@@ -39,6 +41,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     private var totalTimeMs = 4 * 60 * 1000L
     private var timeLeftMs: Long = totalTimeMs
     private var warningShown: Boolean = false
+    private var storyTimerPausedForCastle: Boolean = false
     private val tone = ToneGenerator(AudioManager.STREAM_MUSIC, 80)
     private var musicPlayer: MediaPlayer? = null
     private var soundEnabled: Boolean = true
@@ -51,7 +54,6 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     private var introDeclined: Boolean = false
     private var currentMapIndex: Int = 0
     private var mapStartScore: Int = 0
-    private var showingFinalCelebration: Boolean = false
     private var sessionMapCount: Int = 5
     private var completedMapsCount: Int = 0
     private val typewriterHandler = Handler(Looper.getMainLooper())
@@ -88,9 +90,6 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
                     finish()
                     return
                 }
-                if (showingFinalCelebration) {
-                    return
-                }
                 showExitDialog()
             }
         })
@@ -104,7 +103,13 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         progressManager.startTimerIfNeeded(gateId)
         binding.storyGameView.setQuestionBlocking(true)
         binding.joystickView.resetStick()
-        showQuestionDialog(gateId)
+        val gateTopic = progressManager.getGate(gateId)?.topic
+        if (gateTopic == StoryTopic.CASTLES) {
+            pauseStoryTimerForCastle()
+            showCastleDialog(gateId)
+        } else {
+            showQuestionDialog(gateId)
+        }
     }
 
     override fun onExitReached() {
@@ -115,11 +120,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         }
 
         countdownTimer?.cancel()
-        if (completedMapsCount + 1 >= sessionMapCount && timeLeftMs > 0L) {
-            showFinalCelebration()
-        } else {
-            showWorldSummaryDialog(timeUp = false)
-        }
+        showWorldSummaryDialog(timeUp = false)
     }
 
     override fun onStoryQuestionAnswered(gateId: Int, selectedIndex: Int) {
@@ -141,11 +142,38 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         updateHud()
     }
 
+    override fun onStoryCastleResolved(gateId: Int, points: Int) {
+        if (!gameStarted) return
+        progressManager.unlockGate(gateId)
+        binding.storyGameView.setGates(progressManager.gates)
+        scoreManager.addPoints(points)
+        showStoryToast(getString(R.string.story_castle_correct_points_format, points))
+        closeQuestionState()
+        resumeStoryTimerAfterCastle()
+        updateHud()
+    }
+
+    override fun onStoryCastleFailed(gateId: Int) {
+        if (!gameStarted) return
+        progressManager.unlockGate(gateId)
+        binding.storyGameView.setGates(progressManager.gates)
+        closeQuestionState()
+        resumeStoryTimerAfterCastle()
+        updateHud()
+    }
+
     private fun showQuestionDialog(gateId: Int) {
         if (!gameStarted) return
         if (supportFragmentManager.findFragmentByTag(StoryQuestionDialogFragment.TAG) != null) return
         val dialog = StoryQuestionDialogFragment.newInstance(gateId, progressManager.getOrCreateQuestion(gateId))
         dialog.show(supportFragmentManager, StoryQuestionDialogFragment.TAG)
+    }
+
+    private fun showCastleDialog(gateId: Int) {
+        if (!gameStarted) return
+        if (supportFragmentManager.findFragmentByTag(StoryCastleDialogFragment.TAG) != null) return
+        val dialog = StoryCastleDialogFragment.newInstance(gateId)
+        dialog.show(supportFragmentManager, StoryCastleDialogFragment.TAG)
     }
 
     private fun closeQuestionState() {
@@ -243,7 +271,11 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         val hasTimeLeft = timeLeftMs > 0L
         if (!hasNextMap || !hasTimeLeft) {
             stopMusic()
-            goToResults()
+            if (!hasNextMap && hasTimeLeft) {
+                goToFinalCelebration()
+            } else {
+                goToResults()
+            }
             return
         }
 
@@ -252,26 +284,16 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         startCountdown()
     }
 
-    private fun showFinalCelebration() {
-        if (showingFinalCelebration) return
-        showingFinalCelebration = true
-        binding.storyGameView.setQuestionBlocking(true)
-        binding.joystickView.resetStick()
-        binding.celebrationText.text = getString(R.string.story_final_celebration_text)
-        binding.celebrationOverlay.visibility = View.VISIBLE
-        binding.confettiView.start()
-        binding.celebrationOverlay.setOnClickListener {
-            hideFinalCelebration()
-            showWorldSummaryDialog(timeUp = false)
+    private fun goToFinalCelebration() {
+        val totalTime = (SystemClock.elapsedRealtime() - gameStartMs).toInt()
+        val intent = Intent(this, StoryCongratulationsActivity::class.java).apply {
+            putExtra(ResultActivity.EXTRA_SCORE, scoreManager.score)
+            putExtra(ResultActivity.EXTRA_TOTAL_TIME, totalTime)
+            putExtra(ResultActivity.EXTRA_TOTAL_QUESTIONS, sessionMapCount * 10)
+            putExtra(ResultActivity.EXTRA_GAME_MODE, ScoreManager.MODE_STORY)
         }
-    }
-
-    private fun hideFinalCelebration() {
-        if (!showingFinalCelebration) return
-        showingFinalCelebration = false
-        binding.confettiView.stop()
-        binding.celebrationOverlay.visibility = View.GONE
-        binding.celebrationOverlay.setOnClickListener(null)
+        startActivity(intent)
+        finish()
     }
 
     private val hideStoryToastRunnable = Runnable {
@@ -502,6 +524,20 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         }.start()
     }
 
+    private fun pauseStoryTimerForCastle() {
+        if (storyTimerPausedForCastle) return
+        countdownTimer?.cancel()
+        storyTimerPausedForCastle = true
+    }
+
+    private fun resumeStoryTimerAfterCastle() {
+        if (!storyTimerPausedForCastle) return
+        storyTimerPausedForCastle = false
+        if (gameStarted && timeLeftMs > 0L && !exitingDialog && currentDialogGateId == null) {
+            startCountdown()
+        }
+    }
+
     private fun onTimeUp() {
         if (!gameStarted) return
         binding.storyGameView.setQuestionBlocking(true)
@@ -516,7 +552,6 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     override fun onDestroy() {
         countdownTimer?.cancel()
         cancelTypewriter()
-        hideFinalCelebration()
         stopMusic()
         tone.release()
         super.onDestroy()

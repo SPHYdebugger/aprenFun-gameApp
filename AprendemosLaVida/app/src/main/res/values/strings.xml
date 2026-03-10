@@ -59,6 +59,23 @@
     <string name="math_add_sub_question_format">¿Cuánto es %1$d %2$s %3$d?</string>
     <string name="math_mode_add_sub">Sumas / Restas ➕➖</string>
     <string name="math_mode_multiplications">Multiplicaciones ✖️</string>
+    <string name="math_add_sub_mode_title">Sumas / Restas</string>
+    <string name="math_add_sub_mode_operations">Operaciones ➕➖</string>
+    <string name="math_add_sub_mode_castles">Castillos 🏰</string>
+    <string name="sumas_torres_title">Castillo de sumas 🏰</string>
+    <string name="sumas_torres_question">Resuelve la operación en columna</string>
+    <string name="sumas_torres_check_button">Comprobar ✅</string>
+    <string name="sumas_torres_castle_points_format">Puntos del castillo: %1$d</string>
+    <string name="sumas_torres_total_points_format">Puntos acumulados: %1$d</string>
+    <string name="sumas_torres_correct_toast">¡Correcto! Sumas %1$d puntos</string>
+    <string name="sumas_torres_wrong_toast">Incorrecto. Pierdes 20 puntos. Te quedan %1$d</string>
+    <string name="sumas_torres_fill_all">Completa todas las casillas de resultado</string>
+    <string name="sumas_torres_continue_title">Castillo completado</string>
+    <string name="sumas_torres_continue_message">¿Quieres continuar con otro castillo?</string>
+    <string name="sumas_torres_continue_yes">Continuar</string>
+    <string name="sumas_torres_continue_no">Dejar</string>
+    <string name="sumas_torres_no_points_title">Sin puntos</string>
+    <string name="sumas_torres_no_points_message">Te has quedado sin puntos.\nRespuesta correcta: %1$s\n¿Quieres seguir con otro castillo?</string>
     <string name="ok_button">OK</string>
     <string name="points_penalty_format">-%1$d</string>
 
@@ -261,6 +278,11 @@
     <string name="story_subject_social">Sociales</string>
     <string name="story_subject_english">Inglés</string>
     <string name="story_subject_language">Lengua</string>
+    <string name="story_subject_castles">Castillos (sumas y restas)</string>
+    <string name="story_castle_prompt">Resuelve el castillo</string>
+    <string name="story_castle_try_again_format">Fallo %1$d/3 en castillo</string>
+    <string name="story_castle_correct_points_format">Castillo superado: +%1$d puntos</string>
+    <string name="story_castle_failed_no_points">No has conseguido resolver el castillo y este trofeo no suma puntos</string>
     <string name="story_trophy_1">Trofeo 1</string>
     <string name="story_trophy_2">Trofeo 2</string>
     <string name="story_trophy_3">Trofeo 3</string>

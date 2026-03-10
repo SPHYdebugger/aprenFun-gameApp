@@ -17,7 +17,7 @@ class MathTopicsActivity : BaseActivity() {
         }
 
         binding.addSubButton.setOnClickListener {
-            startActivity(Intent(this, AddSubMathGameActivity::class.java))
+            startActivity(Intent(this, AddSubMathModeActivity::class.java))
         }
 
         binding.backButton.setOnClickListener { finish() }
@@ -26,5 +26,6 @@ class MathTopicsActivity : BaseActivity() {
     companion object {
         const val TYPE_MULTIPLICATION = "multiplication"
         const val TYPE_ADD_SUB = "add_sub"
+        const val TYPE_ADD_SUB_CASTLES = "add_sub_castles"
     }
 }

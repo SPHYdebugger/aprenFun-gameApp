@@ -17,11 +17,23 @@
             android:exported="false"
             android:screenOrientation="portrait" />
         <activity
+            android:name=".activities.StoryCongratulationsActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
             android:name=".activities.GameTypeMenuActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
         <activity
             android:name=".activities.AddSubMathGameActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".activities.TorresActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".activities.AddSubMathModeActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
         <activity
