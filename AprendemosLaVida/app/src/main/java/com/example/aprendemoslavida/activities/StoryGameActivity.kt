@@ -60,6 +60,15 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     private var typewriterRunnable: Runnable? = null
     private var typewriterFullText: String? = null
     private var typewriterOnFinished: (() -> Unit)? = null
+    private var overlayTapAction: (() -> Unit)? = null
+    private var santiChallengeRound: Int = -1
+    private var santiEncounterDone: Boolean = false
+    private var santiEncounterActive: Boolean = false
+
+    companion object {
+        private const val SANTI_CASTLE_GATE_ID = -999
+        private const val SANTI_REWARD_POINTS = 500
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -97,6 +106,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
 
     override fun onGateBlocked(gateId: Int) {
         if (!gameStarted) return
+        if (santiEncounterActive) return
         if (currentDialogGateId != null || exitingDialog) return
 
         currentDialogGateId = gateId
@@ -114,6 +124,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
 
     override fun onExitReached() {
         if (!gameStarted) return
+        if (santiEncounterActive) return
         if (progressManager.unlockedGateCount() < 5) {
             showStoryToast(getString(R.string.story_need_min_trophies))
             return
@@ -121,6 +132,20 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
 
         countdownTimer?.cancel()
         showWorldSummaryDialog(timeUp = false)
+    }
+
+    override fun onSantiNpcReached() {
+        if (!gameStarted) return
+        if (santiEncounterDone || santiEncounterActive) return
+        if (currentDialogGateId != null || exitingDialog) return
+
+        santiEncounterActive = true
+        santiEncounterDone = true
+        binding.storyGameView.setSantiNpcTile(null)
+        binding.storyGameView.setQuestionBlocking(true)
+        binding.joystickView.resetStick()
+        pauseStoryTimerForCastle()
+        showSantiOfferOverlay()
     }
 
     override fun onStoryQuestionAnswered(gateId: Int, selectedIndex: Int) {
@@ -144,6 +169,15 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
 
     override fun onStoryCastleResolved(gateId: Int, points: Int) {
         if (!gameStarted) return
+        if (gateId == SANTI_CASTLE_GATE_ID) {
+            scoreManager.addPoints(SANTI_REWARD_POINTS)
+            updateHud()
+            showSantiClosingOverlay(
+                getString(R.string.story_santi_success_text),
+                getString(R.string.story_santi_success_toast)
+            )
+            return
+        }
         progressManager.unlockGate(gateId)
         binding.storyGameView.setGates(progressManager.gates)
         scoreManager.addPoints(points)
@@ -155,6 +189,13 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
 
     override fun onStoryCastleFailed(gateId: Int) {
         if (!gameStarted) return
+        if (gateId == SANTI_CASTLE_GATE_ID) {
+            showSantiClosingOverlay(
+                getString(R.string.story_santi_fail_text),
+                getString(R.string.story_santi_fail_toast)
+            )
+            return
+        }
         progressManager.unlockGate(gateId)
         binding.storyGameView.setGates(progressManager.gates)
         closeQuestionState()
@@ -172,8 +213,48 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     private fun showCastleDialog(gateId: Int) {
         if (!gameStarted) return
         if (supportFragmentManager.findFragmentByTag(StoryCastleDialogFragment.TAG) != null) return
-        val dialog = StoryCastleDialogFragment.newInstance(gateId)
+        val title = if (gateId == SANTI_CASTLE_GATE_ID) {
+            getString(R.string.story_santi_challenge_title)
+        } else {
+            null
+        }
+        val dialog = StoryCastleDialogFragment.newInstance(gateId, title)
         dialog.show(supportFragmentManager, StoryCastleDialogFragment.TAG)
+    }
+
+    private fun showSantiOfferOverlay() {
+        overlayTapAction = null
+        binding.introOverlay.visibility = View.VISIBLE
+        binding.introButtonsRow.visibility = View.GONE
+        binding.introBackButton.visibility = View.GONE
+        binding.introCharacter.setImageResource(R.drawable.story_player2_front)
+        startTypewriter(getString(R.string.story_santi_offer_text)) {
+            if (santiEncounterActive) {
+                binding.introButtonsRow.visibility = View.VISIBLE
+            }
+        }
+    }
+
+    private fun showSantiClosingOverlay(text: String, toastMessage: String) {
+        overlayTapAction = {
+            overlayTapAction = null
+            binding.introOverlay.visibility = View.GONE
+            showStoryToast(toastMessage)
+            finishSantiEncounter()
+        }
+        binding.introOverlay.visibility = View.VISIBLE
+        binding.introButtonsRow.visibility = View.GONE
+        binding.introBackButton.visibility = View.GONE
+        binding.introCharacter.setImageResource(R.drawable.story_player2_front)
+        startTypewriter(text)
+    }
+
+    private fun finishSantiEncounter() {
+        santiEncounterActive = false
+        binding.joystickView.resetStick()
+        binding.storyGameView.setQuestionBlocking(false)
+        resumeStoryTimerAfterCastle()
+        updateHud()
     }
 
     private fun closeQuestionState() {
@@ -581,16 +662,32 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         binding.introOverlay.setOnClickListener {
             if (typewriterRunnable != null) {
                 completeTypewriterImmediately()
+                return@setOnClickListener
             }
+            overlayTapAction?.invoke()
         }
         binding.introBackButton.setOnClickListener { goToMainMenu() }
         binding.introYesButton.setOnClickListener {
+            if (santiEncounterActive) {
+                binding.introButtonsRow.visibility = View.GONE
+                binding.introOverlay.visibility = View.GONE
+                showCastleDialog(SANTI_CASTLE_GATE_ID)
+                return@setOnClickListener
+            }
             if (gameStarted) return@setOnClickListener
             cancelTypewriter()
             binding.introOverlay.visibility = View.GONE
             startStoryGame()
         }
         binding.introNoButton.setOnClickListener {
+            if (santiEncounterActive) {
+                binding.introButtonsRow.visibility = View.GONE
+                showSantiClosingOverlay(
+                    getString(R.string.story_santi_decline_text),
+                    getString(R.string.story_santi_decline_toast)
+                )
+                return@setOnClickListener
+            }
             if (introDeclined) return@setOnClickListener
             introDeclined = true
             binding.introButtonsRow.visibility = View.GONE
@@ -611,6 +708,10 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         currentMapIndex = 0
         completedMapsCount = 0
         sessionMapCount = SettingsManager.getStoryMapCount(this).coerceIn(3, 5)
+        santiChallengeRound = Random.nextInt(sessionMapCount)
+        santiEncounterDone = false
+        santiEncounterActive = false
+        overlayTapAction = null
         totalTimeMs = SettingsManager.getStoryGameTimeMs(this).toLong()
         timeLeftMs = totalTimeMs
         warningShown = false
@@ -706,6 +807,15 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         binding.storyGameView.setMap(map)
         binding.storyGameView.setGates(progressManager.gates)
         binding.storyGameView.randomizeSecretEntrance()
+        val shouldPlaceSanti = !santiEncounterDone && completedMapsCount == santiChallengeRound
+        if (shouldPlaceSanti) {
+            val santiTile = map.trophyHiddenCandidates
+                .filter { (x, y) -> map.isWalkable(x, y) && map.tileTypeAt(x, y) != StoryMap.TileType.TREE }
+                .randomOrNull()
+            binding.storyGameView.setSantiNpcTile(santiTile)
+        } else {
+            binding.storyGameView.setSantiNpcTile(null)
+        }
         binding.storyGameView.setQuestionBlocking(false)
         binding.joystickView.resetStick()
     }

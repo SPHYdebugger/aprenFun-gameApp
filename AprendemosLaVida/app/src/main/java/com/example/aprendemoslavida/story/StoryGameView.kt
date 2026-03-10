@@ -25,6 +25,7 @@ class StoryGameView @JvmOverloads constructor(
     interface Listener {
         fun onGateBlocked(gateId: Int)
         fun onExitReached()
+        fun onSantiNpcReached()
     }
 
     enum class Direction {
@@ -61,6 +62,7 @@ class StoryGameView @JvmOverloads constructor(
     private val tilesetBitmap: Bitmap? = buildForestTileset(tilesetTileSizePx)
     private val tileSourceMap: Map<StoryMap.TileType, Rect> = buildTileSourceMap(tilesetTileSizePx)
     private val trophyBitmap: Bitmap = buildTrophyBitmap(24)
+    private val santiBitmap: Bitmap? = loadBitmapByName("story_player2_front")
 
     private val fallbackPlayerBitmap: Bitmap? = BitmapFactory.decodeResource(
         resources,
@@ -85,6 +87,9 @@ class StoryGameView @JvmOverloads constructor(
     private val movementTilesPerSecond = 2.8f
     private val cameraVisibleTilesX = 4.5f
     private val cameraVisibleTilesY = 4.5f
+    private val santiNpcHalfSize = 0.34f
+    private var santiNpcRect: RectF? = null
+    private var santiNpcReachedNotified: Boolean = false
 
     init {
         loadDirectionalSprites()
@@ -130,6 +135,17 @@ class StoryGameView @JvmOverloads constructor(
 
     fun currentMap(): StoryMap = storyMap
 
+    fun setSantiNpcTile(tile: Pair<Int, Int>?) {
+        santiNpcRect = if (tile == null) {
+            null
+        } else {
+            val (x, y) = tile
+            RectF(x.toFloat(), y.toFloat(), x + 1f, y + 1f)
+        }
+        santiNpcReachedNotified = false
+        invalidate()
+    }
+
     fun setMap(map: StoryMap) {
         storyMap = map
         gates = emptyList()
@@ -138,6 +154,8 @@ class StoryGameView @JvmOverloads constructor(
         analogInputY = 0f
         lastBlockedGateId = null
         exitNotified = false
+        santiNpcRect = null
+        santiNpcReachedNotified = false
         playerCenterX = storyMap.startTileX
         playerCenterY = storyMap.startTileY
         invalidate()
@@ -216,6 +234,15 @@ class StoryGameView @JvmOverloads constructor(
             }
         }
 
+        val santiRect = santiNpcRect
+        if (santiRect != null) {
+            val santiZone = storyMap.hiddenZoneAtPoint(santiRect.centerX(), santiRect.centerY())
+            if (santiZone < 0 || santiZone == activeHiddenZone) {
+                val rect = toScreenRect(santiRect, tileSize, cameraX, cameraY)
+                drawSanti(canvas, rect)
+            }
+        }
+
         val playerRectPx = RectF(
             ((playerCenterX - playerHalfSize - cameraX) * tileSize) + (width / 2f),
             ((playerCenterY - playerHalfSize - cameraY) * tileSize) + (height / 2f),
@@ -262,6 +289,8 @@ class StoryGameView @JvmOverloads constructor(
         } else {
             exitNotified = false
         }
+
+        notifySantiNpcCollision()
     }
 
     private fun movementVector(): Pair<Float, Float> {
@@ -355,6 +384,27 @@ class StoryGameView @JvmOverloads constructor(
             return RectF(gate.rect)
         }
         return rect
+    }
+
+    private fun notifySantiNpcCollision() {
+        val santiRect = santiNpcRect ?: return
+        if (santiNpcReachedNotified) return
+        val playerRect = RectF(
+            playerCenterX - playerHalfSize,
+            playerCenterY - playerHalfSize,
+            playerCenterX + playerHalfSize,
+            playerCenterY + playerHalfSize
+        )
+        val hitRect = RectF(
+            santiRect.centerX() - santiNpcHalfSize,
+            santiRect.centerY() - santiNpcHalfSize,
+            santiRect.centerX() + santiNpcHalfSize,
+            santiRect.centerY() + santiNpcHalfSize
+        )
+        if (RectF(playerRect).intersect(hitRect)) {
+            santiNpcReachedNotified = true
+            listener?.onSantiNpcReached()
+        }
     }
 
     private fun toScreenRect(worldRect: RectF, tileSize: Float, cameraX: Float, cameraY: Float): RectF {
@@ -706,6 +756,19 @@ class StoryGameView @JvmOverloads constructor(
         val top = rect.centerY() - size / 2f
         val dst = RectF(left, top, left + size, top + size)
         canvas.drawBitmap(trophyBitmap, null, dst, null)
+    }
+
+    private fun drawSanti(canvas: Canvas, rect: RectF) {
+        val size = min(rect.width(), rect.height()) * 0.88f
+        val left = rect.centerX() - size / 2f
+        val top = rect.centerY() - size / 2f
+        val dst = RectF(left, top, left + size, top + size)
+        val bitmap = santiBitmap
+        if (bitmap != null) {
+            canvas.drawBitmap(bitmap, null, dst, null)
+            return
+        }
+        canvas.drawOval(dst, playerFallbackPaint)
     }
 
     private fun loadBitmapByName(name: String): Bitmap? {

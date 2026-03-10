@@ -280,9 +280,17 @@
     <string name="story_subject_language">Lengua</string>
     <string name="story_subject_castles">Castillos (sumas y restas)</string>
     <string name="story_castle_prompt">Resuelve el castillo</string>
+    <string name="story_santi_challenge_title">RETO DE SANTI</string>
     <string name="story_castle_try_again_format">Fallo %1$d/3 en castillo</string>
     <string name="story_castle_correct_points_format">Castillo superado: +%1$d puntos</string>
     <string name="story_castle_failed_no_points">No has conseguido resolver el castillo y este trofeo no suma puntos</string>
+    <string name="story_santi_offer_text">Hola, me llamo Santi. Te propongo un reto.\nSi aciertas mi pregunta te daré 500 puntos extra.\n¿ Te atreves ?</string>
+    <string name="story_santi_success_text">Guau!! que bien lo has hecho.\nTe has ganado 500 puntos.\n¡ Hasta la próxima !</string>
+    <string name="story_santi_fail_text">No has conseguido superar el reto.\nHasta la próxima.</string>
+    <string name="story_santi_decline_text">Oh, pues nada, hasta la próxima</string>
+    <string name="story_santi_success_toast">Has ganado 500 puntos del reto de Santi</string>
+    <string name="story_santi_fail_toast">No has conseguido el reto de Santi</string>
+    <string name="story_santi_decline_toast">No has aceptado el reto de Santi</string>
     <string name="story_trophy_1">Trofeo 1</string>
     <string name="story_trophy_2">Trofeo 2</string>
     <string name="story_trophy_3">Trofeo 3</string>

@@ -33,6 +33,7 @@ class StoryCastleDialogFragment : DialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val gateId = requireArguments().getInt(ARG_GATE_ID)
+        val dialogTitle = requireArguments().getString(ARG_TITLE).orEmpty()
         val top = requireArguments().getInt(ARG_TOP)
         val bottom = requireArguments().getInt(ARG_BOTTOM)
         val operator = requireArguments().getString(ARG_OPERATOR).orEmpty()
@@ -149,7 +150,7 @@ class StoryCastleDialogFragment : DialogFragment() {
         }
 
         val titleView = TextView(requireContext()).apply {
-            text = getString(R.string.story_checkpoint_title)
+            text = if (dialogTitle.isNotBlank()) dialogTitle else getString(R.string.story_checkpoint_title)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 20f)
             setTextColor(requireContext().getColor(R.color.text_primary))
             setPadding((20 * density).toInt(), (16 * density).toInt(), (20 * density).toInt(), (4 * density).toInt())
@@ -378,8 +379,9 @@ class StoryCastleDialogFragment : DialogFragment() {
         private const val ARG_OPERATOR = "arg_operator"
         private const val ARG_RESULT = "arg_result"
         private const val ARG_COLUMNS = "arg_columns"
+        private const val ARG_TITLE = "arg_title"
 
-        fun newInstance(gateId: Int): StoryCastleDialogFragment {
+        fun newInstance(gateId: Int, title: String? = null): StoryCastleDialogFragment {
             val op = createRandomOperation()
             return StoryCastleDialogFragment().apply {
                 arguments = bundleOf(
@@ -388,7 +390,8 @@ class StoryCastleDialogFragment : DialogFragment() {
                     ARG_BOTTOM to op.bottom,
                     ARG_OPERATOR to op.operator,
                     ARG_RESULT to op.result,
-                    ARG_COLUMNS to op.columns
+                    ARG_COLUMNS to op.columns,
+                    ARG_TITLE to title.orEmpty()
                 )
             }
         }
