@@ -2,6 +2,7 @@ package com.example.aprendemoslavida.story
 
 import android.graphics.RectF
 import android.os.SystemClock
+import kotlin.math.floor
 import kotlin.random.Random
 
 private val DEFAULT_GATE_TOPICS: List<StoryTopic> = listOf(
@@ -26,6 +27,7 @@ class StoryProgressManager(
     private val gateQuestions = HashMap<Int, StoryQuestion>()
     private val gateStartTimeMs = HashMap<Int, Long>()
     private val topics = if (gateTopics.size == 10) gateTopics else DEFAULT_GATE_TOPICS
+    private val reachableTiles: Set<Pair<Int, Int>> = computeReachableTiles()
 
     val gates: List<StoryGate> = buildRandomizedGates(topics)
 
@@ -120,7 +122,35 @@ class StoryProgressManager(
 
     private fun isValidTrophyTile(tile: Pair<Int, Int>): Boolean {
         val (x, y) = tile
+        if (!reachableTiles.contains(tile)) return false
         if (!storyMap.isWalkable(x, y)) return false
         return storyMap.tileTypeAt(x, y) != StoryMap.TileType.TREE
+    }
+
+    private fun computeReachableTiles(): Set<Pair<Int, Int>> {
+        val start = floor(storyMap.startTileX).toInt() to floor(storyMap.startTileY).toInt()
+        if (!storyMap.isWalkable(start.first, start.second)) return emptySet()
+        val visited = LinkedHashSet<Pair<Int, Int>>()
+        val queue = ArrayDeque<Pair<Int, Int>>()
+        queue.add(start)
+        visited.add(start)
+        while (queue.isNotEmpty()) {
+            val (x, y) = queue.removeFirst()
+            val neighbors = listOf(
+                x - 1 to y,
+                x + 1 to y,
+                x to y - 1,
+                x to y + 1
+            )
+            neighbors.forEach { (nx, ny) ->
+                val next = nx to ny
+                if (visited.contains(next)) return@forEach
+                if (storyMap.isWalkable(nx, ny)) {
+                    visited.add(next)
+                    queue.add(next)
+                }
+            }
+        }
+        return visited
     }
 }

@@ -250,6 +250,16 @@
     <string name="story_intro_no_text">Vaya que pena, pues hasta otra...\nCHAO</string>
     <string name="story_final_celebration_text">¡¡ ENHORABUENA\nLO HAS CONSEGIDO !!\n\nSe nota que sabes un montón.\nGracias por ayudarme a llegar hasta el final.\n\nVuelve cuando quieras mejorar tu puntuación...\nBYE</string>
     <string name="story_intro_back">Volver</string>
+    <string name="story_streak_title">RACHA</string>
+    <string name="story_streak_tap_continue">Toca la pantalla para continuar</string>
+    <string name="story_streak_rewards_info">Recompensas de racha: 3 días = +300 puntos, 5 días = +500 puntos, 7 días = +700 puntos.</string>
+    <string name="story_streak_first_time_format">Hoy activas tu racha por primera vez.\n\nJuega en días consecutivos y tu primera partida del día podrá tener premio extra.\n\n%1$s</string>
+    <string name="story_streak_progress_format">Llevas %1$d días seguidos.\nTe faltan %2$d días para la recompensa de %3$d días.</string>
+    <string name="story_streak_progress_max_format">Llevas %1$d días seguidos.\nYa has alcanzado la recompensa máxima de racha.</string>
+    <string name="story_streak_today_bonus_format">Premio de hoy activado: +%1$d puntos para esta primera partida.</string>
+    <string name="story_streak_today_no_bonus">Hoy no hay premio de racha, pero sigues avanzando.</string>
+    <string name="story_streak_daily_format">%1$s\n\n%2$s\n\n%3$s</string>
+    <string name="story_streak_bonus_toast_format">Bonus por racha: +%1$d puntos</string>
     <string name="story_theme_selection_title">Selección de temas</string>
     <string name="story_hidden_menu_title">Menú oculto</string>
     <string name="story_hidden_menu_topic_button">Temática</string>

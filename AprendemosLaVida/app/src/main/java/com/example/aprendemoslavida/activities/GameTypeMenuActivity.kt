@@ -3,6 +3,7 @@ package com.example.aprendemoslavida.activities
 import android.content.Intent
 import android.os.Bundle
 import com.example.aprendemoslavida.databinding.ActivityGameTypeMenuBinding
+import com.example.aprendemoslavida.utils.SettingsManager
 
 class GameTypeMenuActivity : BaseActivity() {
     private lateinit var binding: ActivityGameTypeMenuBinding
@@ -22,7 +23,13 @@ class GameTypeMenuActivity : BaseActivity() {
         }
 
         binding.storyModeButton.setOnClickListener {
-            startActivity(Intent(this, StoryGameActivity::class.java))
+            val streakState = SettingsManager.previewStoryStreak(this)
+            val target = if (streakState.firstPlayToday) {
+                Intent(this, StoryStreakActivity::class.java)
+            } else {
+                Intent(this, StoryGameActivity::class.java)
+            }
+            startActivity(target)
         }
 
         binding.backButton.setOnClickListener { finish() }

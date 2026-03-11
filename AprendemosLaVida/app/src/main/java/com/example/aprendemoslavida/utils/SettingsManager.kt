@@ -2,6 +2,10 @@ package com.example.aprendemoslavida.utils
 
 import android.content.Context
 import com.example.aprendemoslavida.story.StoryTopic
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 import kotlin.math.roundToInt
 
 object SettingsManager {
@@ -11,6 +15,9 @@ object SettingsManager {
     private const val KEY_STORY_MAP_COUNT = "story_map_count"
     private const val KEY_SOUND_ENABLED = "sound_enabled"
     private const val KEY_STORY_TROPHY_TOPIC_PREFIX = "story_trophy_topic_"
+    private const val KEY_STORY_STREAK_DAYS = "story_streak_days"
+    private const val KEY_STORY_STREAK_LAST_DAY = "story_streak_last_day"
+    private const val KEY_STORY_STREAK_LAST_BONUS_DAY = "story_streak_last_bonus_day"
     private const val STORY_TROPHY_COUNT = 10
 
     private const val DEFAULT_QUESTION_TIME_MS = 12000
@@ -137,5 +144,105 @@ object SettingsManager {
         val randomTopics = (0 until STORY_TROPHY_COUNT).map { STORY_RANDOM_TOPIC_POOL.random() }
         setStoryGateTopics(context, randomTopics)
         return randomTopics
+    }
+
+    data class StoryStreakState(
+        val isFirstTime: Boolean,
+        val streakDays: Int,
+        val firstPlayToday: Boolean,
+        val bonusForToday: Int,
+        val nextRewardDays: Int?,
+        val daysToNextReward: Int
+    )
+
+    fun previewStoryStreak(context: Context): StoryStreakState {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val storedDays = prefs.getInt(KEY_STORY_STREAK_DAYS, 0).coerceAtLeast(0)
+        val lastDay = prefs.getInt(KEY_STORY_STREAK_LAST_DAY, 0)
+        val isFirstTime = storedDays == 0 && lastDay == 0
+        val today = todayKey()
+        val yesterday = yesterdayKey()
+        val firstPlayToday = lastDay != today
+        val previewDays = when {
+            !firstPlayToday -> storedDays.coerceAtLeast(1)
+            lastDay == yesterday -> (storedDays.coerceAtLeast(1) + 1)
+            else -> 1
+        }
+        val nextReward = nextRewardAfter(previewDays)
+        return StoryStreakState(
+            isFirstTime = isFirstTime,
+            streakDays = previewDays,
+            firstPlayToday = firstPlayToday,
+            bonusForToday = if (firstPlayToday) rewardForStreak(previewDays) else 0,
+            nextRewardDays = nextReward,
+            daysToNextReward = if (nextReward != null) (nextReward - previewDays).coerceAtLeast(0) else 0
+        )
+    }
+
+    fun consumeStoryStreakLaunch(context: Context): StoryStreakState {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val storedDays = prefs.getInt(KEY_STORY_STREAK_DAYS, 0).coerceAtLeast(0)
+        val lastDay = prefs.getInt(KEY_STORY_STREAK_LAST_DAY, 0)
+        val isFirstTime = storedDays == 0 && lastDay == 0
+        val today = todayKey()
+        val yesterday = yesterdayKey()
+        val firstPlayToday = lastDay != today
+
+        val updatedDays = when {
+            !firstPlayToday -> storedDays.coerceAtLeast(1)
+            lastDay == yesterday -> (storedDays.coerceAtLeast(1) + 1)
+            else -> 1
+        }
+
+        var bonus = 0
+        if (firstPlayToday) {
+            val reward = rewardForStreak(updatedDays)
+            if (reward > 0) {
+                bonus = reward
+            }
+            prefs.edit()
+                .putInt(KEY_STORY_STREAK_DAYS, updatedDays)
+                .putInt(KEY_STORY_STREAK_LAST_DAY, today)
+                .putInt(KEY_STORY_STREAK_LAST_BONUS_DAY, if (reward > 0) today else prefs.getInt(KEY_STORY_STREAK_LAST_BONUS_DAY, 0))
+                .apply()
+        } else if (storedDays == 0) {
+            prefs.edit().putInt(KEY_STORY_STREAK_DAYS, updatedDays).apply()
+        }
+
+        val nextReward = nextRewardAfter(updatedDays)
+        return StoryStreakState(
+            isFirstTime = isFirstTime,
+            streakDays = updatedDays,
+            firstPlayToday = firstPlayToday,
+            bonusForToday = bonus,
+            nextRewardDays = nextReward,
+            daysToNextReward = if (nextReward != null) (nextReward - updatedDays).coerceAtLeast(0) else 0
+        )
+    }
+
+    private fun rewardForStreak(days: Int): Int {
+        return when (days) {
+            3 -> 300
+            5 -> 500
+            7 -> 700
+            else -> 0
+        }
+    }
+
+    private fun nextRewardAfter(days: Int): Int? {
+        val rewards = listOf(3, 5, 7)
+        return rewards.firstOrNull { it > days }
+    }
+
+    private fun todayKey(): Int {
+        val formatter = SimpleDateFormat("yyyyMMdd", Locale.US)
+        return formatter.format(Date()).toIntOrNull() ?: 0
+    }
+
+    private fun yesterdayKey(): Int {
+        val calendar = Calendar.getInstance()
+        calendar.add(Calendar.DAY_OF_YEAR, -1)
+        val formatter = SimpleDateFormat("yyyyMMdd", Locale.US)
+        return formatter.format(calendar.time).toIntOrNull() ?: 0
     }
 }

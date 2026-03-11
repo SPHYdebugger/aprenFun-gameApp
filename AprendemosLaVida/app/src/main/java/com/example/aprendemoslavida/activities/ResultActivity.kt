@@ -10,6 +10,7 @@ import com.example.aprendemoslavida.R
 import com.example.aprendemoslavida.databinding.ActivityResultBinding
 import com.example.aprendemoslavida.model.ScoreEntry
 import com.example.aprendemoslavida.utils.ScoreManager
+import com.example.aprendemoslavida.utils.SettingsManager
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -49,7 +50,14 @@ class ResultActivity : BaseActivity() {
                     socialTopic
                 )
                 ScoreManager.MODE_LANGUAGE -> Intent(this, LanguageGameActivity::class.java)
-                ScoreManager.MODE_STORY -> Intent(this, StoryGameActivity::class.java)
+                ScoreManager.MODE_STORY -> {
+                    val streakState = SettingsManager.previewStoryStreak(this)
+                    if (streakState.firstPlayToday) {
+                        Intent(this, StoryStreakActivity::class.java)
+                    } else {
+                        Intent(this, StoryGameActivity::class.java)
+                    }
+                }
                 else -> Intent(this, GameActivity::class.java)
             }
             startActivity(replayIntent)

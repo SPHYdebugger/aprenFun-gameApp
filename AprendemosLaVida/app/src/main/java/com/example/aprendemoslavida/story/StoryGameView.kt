@@ -68,10 +68,15 @@ class StoryGameView @JvmOverloads constructor(
         resources,
         com.example.aprendemoslavida.R.drawable.splash_image
     )
+    private val playerIdleBitmap: Bitmap? by lazy { loadBitmapByName("story_player_base") }
     private var playerUpBitmap: Bitmap? = null
     private var playerDownBitmap: Bitmap? = null
     private var playerLeftBitmap: Bitmap? = null
     private var playerRightBitmap: Bitmap? = null
+    private var playerUpFrames: List<Bitmap> = emptyList()
+    private var playerRightFrames: List<Bitmap> = emptyList()
+    private var playerDownFrames: List<Bitmap> = emptyList()
+    private var playerLeftFrames: List<Bitmap> = emptyList()
     private var playerTilesetBitmap: Bitmap? = null
     private var playerTilesetTileSize: Int = 0
     private val playerFrameCount = 4
@@ -425,6 +430,18 @@ class StoryGameView @JvmOverloads constructor(
         } ?: fallbackPlayerBitmap
     }
 
+    private fun currentPlayerFrameBitmap(): Bitmap? {
+        val frameIndex = if (playerMoving) playerAnimFrame else 0
+        val frames = when (facing) {
+            Facing.UP -> playerUpFrames
+            Facing.DOWN -> playerDownFrames
+            Facing.LEFT -> playerLeftFrames
+            Facing.RIGHT -> playerRightFrames
+        }
+        if (frames.isEmpty()) return null
+        return frames[frameIndex.coerceIn(0, frames.lastIndex)]
+    }
+
     private fun updateFacing(vectorX: Float, vectorY: Float) {
         facing = if (kotlin.math.abs(vectorX) > kotlin.math.abs(vectorY)) {
             if (vectorX >= 0f) Facing.RIGHT else Facing.LEFT
@@ -434,6 +451,30 @@ class StoryGameView @JvmOverloads constructor(
     }
 
     private fun loadDirectionalSprites() {
+        // Option -1: explicit frame-by-frame resources:
+        // player_frames_<direction>_<1..4>
+        val upFrames = loadFrameSequence("player_frames_up")
+        // The imported sheet has left/right rows swapped relative to movement vectors.
+        // Swap them here so on-screen motion matches joystick direction.
+        val rightFrames = loadFrameSequence("player_frames_left")
+        val downFrames = loadFrameSequence("player_frames_down")
+        val leftFrames = loadFrameSequence("player_frames_right")
+        if (upFrames.size == playerFrameCount &&
+            rightFrames.size == playerFrameCount &&
+            downFrames.size == playerFrameCount &&
+            leftFrames.size == playerFrameCount
+        ) {
+            playerUpFrames = upFrames
+            playerRightFrames = rightFrames
+            playerDownFrames = downFrames
+            playerLeftFrames = leftFrames
+            playerUpBitmap = upFrames.firstOrNull()
+            playerRightBitmap = rightFrames.firstOrNull()
+            playerDownBitmap = downFrames.firstOrNull()
+            playerLeftBitmap = leftFrames.firstOrNull()
+            return
+        }
+
         // Option 0: full tileset in a 4x4 grid (rows: up, right, down, left).
         val sheet = loadBitmapByName("story_player_sheet")
         if (sheet != null && sheet.width >= playerFrameCount && sheet.height >= 4) {
@@ -513,21 +554,58 @@ class StoryGameView @JvmOverloads constructor(
     }
 
     private fun drawPlayer(canvas: Canvas, dst: RectF) {
+        if (!playerMoving) {
+            val idle = playerIdleBitmap
+            if (idle != null) {
+                canvas.drawBitmap(idle, null, dst, null)
+                return
+            }
+        }
+
+        val adjustedDst = adjustedPlayerDst(dst)
+        val frameBitmap = currentPlayerFrameBitmap()
+        if (frameBitmap != null) {
+            canvas.drawBitmap(frameBitmap, null, adjustedDst, null)
+            return
+        }
+
         val tileset = playerTilesetBitmap
         if (tileset != null && playerTilesetTileSize > 0) {
             val src = currentPlayerFrameRect()
             if (src != null) {
-                canvas.drawBitmap(tileset, src, dst, null)
+                canvas.drawBitmap(tileset, src, adjustedDst, null)
                 return
             }
         }
 
         val playerBitmap = currentPlayerBitmap()
         if (playerBitmap != null) {
-            canvas.drawBitmap(playerBitmap, null, dst, null)
+            canvas.drawBitmap(playerBitmap, null, adjustedDst, null)
         } else {
-            canvas.drawOval(dst, playerFallbackPaint)
+            canvas.drawOval(adjustedDst, playerFallbackPaint)
         }
+    }
+
+    private fun adjustedPlayerDst(dst: RectF): RectF {
+        var adjusted = dst
+        if (facing == Facing.UP) {
+            // Up-facing imported frames are slightly narrower; widen a bit to match other directions.
+            val extraHalfWidth = adjusted.width() * 0.08f
+            adjusted = RectF(adjusted.left - extraHalfWidth, adjusted.top, adjusted.right + extraHalfWidth, adjusted.bottom)
+        }
+        if (playerMoving) {
+            adjusted = scaleRectFromCenter(adjusted, 0.90f)
+        }
+        return adjusted
+    }
+
+    private fun scaleRectFromCenter(rect: RectF, scale: Float): RectF {
+        val safeScale = scale.coerceIn(0.1f, 2f)
+        val cx = rect.centerX()
+        val cy = rect.centerY()
+        val halfW = (rect.width() * safeScale) / 2f
+        val halfH = (rect.height() * safeScale) / 2f
+        return RectF(cx - halfW, cy - halfH, cx + halfW, cy + halfH)
     }
 
     private fun currentPlayerFrameRect(): Rect? {
@@ -760,9 +838,14 @@ class StoryGameView @JvmOverloads constructor(
 
     private fun drawSanti(canvas: Canvas, rect: RectF) {
         val size = min(rect.width(), rect.height()) * 0.88f
-        val left = rect.centerX() - size / 2f
-        val top = rect.centerY() - size / 2f
-        val dst = RectF(left, top, left + size, top + size)
+        val halfHeight = size / 2f
+        val halfWidth = halfHeight * 0.78f
+        val dst = RectF(
+            rect.centerX() - halfWidth,
+            rect.centerY() - halfHeight,
+            rect.centerX() + halfWidth,
+            rect.centerY() + halfHeight
+        )
         val bitmap = santiBitmap
         if (bitmap != null) {
             canvas.drawBitmap(bitmap, null, dst, null)
@@ -775,6 +858,15 @@ class StoryGameView @JvmOverloads constructor(
         val id = resources.getIdentifier(name, "drawable", context.packageName)
         if (id == 0) return null
         return BitmapFactory.decodeResource(resources, id)
+    }
+
+    private fun loadFrameSequence(prefix: String): List<Bitmap> {
+        val list = ArrayList<Bitmap>(playerFrameCount)
+        for (i in 1..playerFrameCount) {
+            val bmp = loadBitmapByName("${prefix}_$i") ?: return emptyList()
+            list.add(bmp)
+        }
+        return list
     }
 
     private fun clampCameraCoord(value: Float, halfView: Float, mapSize: Float): Float {
