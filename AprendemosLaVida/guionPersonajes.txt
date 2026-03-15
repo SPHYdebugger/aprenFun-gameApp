@@ -1,0 +1,36 @@
+GUIÓN PERSONAJES (MODO HISTORIA)
+================================
+
+SOFÍA
+-----
+1) Intro inicial
+Hola, me llamo Sofía.
+Necesito que me ayudes a llegar al final del camino.
+Responde correctamente para obtener más puntos.
+
+¿ Te atreves ?
+
+2) Si rechazas la intro
+Vaya que pena, pues hasta otra...
+CHAO
+
+
+SANTI
+-----
+1) Propuesta de reto
+Hola, me llamo Santi. Te propongo un reto.
+Si aciertas mi pregunta te daré 500 puntos extra.
+¿ Te atreves ?
+
+2) Si superas el reto
+Guau!! que bien lo has hecho.
+Te has ganado 500 puntos.
+¡ Hasta la próxima !
+
+3) Si fallas el reto
+No has conseguido superar el reto.
+Hasta la próxima.
+
+4) Si no aceptas el reto
+Oh, pues nada, hasta la próxima
+

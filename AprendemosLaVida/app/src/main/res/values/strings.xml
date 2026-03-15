@@ -224,6 +224,9 @@
     <string name="story_score_format">Puntos: %1$d</string>
     <string name="story_checkpoints_default">Checkpoints: 0/5</string>
     <string name="story_checkpoints_format">Checkpoints: %1$d/%2$d</string>
+    <string name="story_trophy_progress_default">0/10</string>
+    <string name="story_trophy_progress_format">%1$d/%2$d</string>
+    <string name="story_trophy_progress_cd">Trofeos obtenidos</string>
     <string name="story_time_default">Tiempo: 07:00</string>
     <string name="story_time_format">Tiempo: %1$02d:%2$02d</string>
     <string name="story_checkpoint_title">Trofeo encontrado</string>
@@ -256,7 +259,7 @@
     <string name="story_streak_first_time_format">Hoy activas tu racha por primera vez.\n\nJuega en días consecutivos y tu primera partida del día podrá tener premio extra.\n\n%1$s</string>
     <string name="story_streak_progress_format">Llevas %1$d días seguidos.\nTe faltan %2$d días para la recompensa de %3$d días.</string>
     <string name="story_streak_progress_max_format">Llevas %1$d días seguidos.\nYa has alcanzado la recompensa máxima de racha.</string>
-    <string name="story_streak_today_bonus_format">Premio de hoy activado: +%1$d puntos para esta primera partida.</string>
+    <string name="story_streak_today_bonus_format">Si terminas al menos una partida hoy: +%1$d puntos por racha.</string>
     <string name="story_streak_today_no_bonus">Hoy no hay premio de racha, pero sigues avanzando.</string>
     <string name="story_streak_daily_format">%1$s\n\n%2$s\n\n%3$s</string>
     <string name="story_streak_bonus_toast_format">Bonus por racha: +%1$d puntos</string>

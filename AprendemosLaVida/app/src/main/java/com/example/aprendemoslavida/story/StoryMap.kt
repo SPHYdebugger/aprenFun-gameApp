@@ -8,6 +8,7 @@ import kotlin.random.Random
 class StoryMap(
     val width: Int,
     val height: Int,
+    val visualTheme: VisualTheme,
     private val walkableTiles: Set<Pair<Int, Int>>,
     private val tileTypes: Array<TileType>,
     private val hiddenZoneIndex: IntArray,
@@ -21,6 +22,15 @@ class StoryMap(
     val startTileY: Float,
     val exitRect: RectF
 ) {
+    enum class VisualTheme {
+        FOREST,
+        CITY_CLASSIC,
+        CITY_TILESET
+    }
+
+    val isCityTheme: Boolean
+        get() = visualTheme != VisualTheme.FOREST
+
     private var chosenSecretEntrance: Pair<Int, Int>? = secretEntrances.firstOrNull()
 
     enum class TileType {
@@ -73,6 +83,10 @@ class StoryMap(
     fun hiddenZoneAtTile(tileX: Int, tileY: Int): Int {
         if (tileX < 0 || tileY < 0 || tileX >= width || tileY >= height) return -1
         return hiddenZoneIndex[(tileY * width) + tileX]
+    }
+
+    fun isHiddenZoneEntrance(tileX: Int, tileY: Int): Boolean {
+        return hiddenZoneEntrances.contains(tileX to tileY)
     }
 
     fun hiddenZoneAtPoint(worldX: Float, worldY: Float): Int {
@@ -211,6 +225,7 @@ class StoryMap(
             return StoryMap(
                 width = width,
                 height = height,
+                visualTheme = VisualTheme.FOREST,
                 walkableTiles = path,
                 tileTypes = tiles,
                 hiddenZoneIndex = hiddenZoneIndex,
@@ -381,6 +396,16 @@ class StoryMap(
             )
         }
 
+        fun createAllCityVariants(): List<StoryMap> {
+            val baseMaps = listOf(createDefault()) + createAllVariants()
+            return baseMaps.map(::copyAsTilesetCityMap)
+        }
+
+        fun createAllClassicCityVariants(): List<StoryMap> {
+            val baseMaps = listOf(createDefault()) + createAllVariants()
+            return baseMaps.map(::copyAsClassicCityMap)
+        }
+
         private fun buildVariantMap(
             basePath: Set<Pair<Int, Int>>,
             rocks: List<Pair<Int, Int>>,
@@ -465,6 +490,7 @@ class StoryMap(
             return StoryMap(
                 width = width,
                 height = height,
+                visualTheme = VisualTheme.FOREST,
                 walkableTiles = path,
                 tileTypes = tiles,
                 hiddenZoneIndex = hiddenZoneIndex,
@@ -500,6 +526,68 @@ class StoryMap(
                 }
             }
             return list
+        }
+
+        private fun copyAsClassicCityMap(source: StoryMap): StoryMap {
+            val cityTiles = Array(source.width * source.height) { index ->
+                val x = index % source.width
+                val y = index / source.width
+                val tile = source.tileTypes[index]
+                when {
+                    source.walkableTiles.contains(x to y) -> TileType.DIRT
+                    tile == TileType.TREE -> if (Random.nextBoolean()) TileType.TREE else TileType.ROCK
+                    else -> tile
+                }
+            }
+            return StoryMap(
+                width = source.width,
+                height = source.height,
+                visualTheme = VisualTheme.CITY_CLASSIC,
+                walkableTiles = source.walkableTiles.toSet(),
+                tileTypes = cityTiles,
+                hiddenZoneIndex = source.hiddenZoneIndex.copyOf(),
+                hiddenZones = source.hiddenZones.map { RectF(it) },
+                hiddenZoneEntrances = source.hiddenZoneEntrances.toSet(),
+                secretEntrances = source.secretEntrances.toList(),
+                trophyMainCandidates = source.trophyMainCandidates.toList(),
+                trophySecretCandidates = source.trophySecretCandidates.toList(),
+                trophyHiddenCandidates = source.trophyHiddenCandidates.toList(),
+                startTileX = source.startTileX,
+                startTileY = source.startTileY,
+                exitRect = RectF(source.exitRect)
+            ).apply { randomizeSecretEntrance() }
+        }
+
+        private fun copyAsTilesetCityMap(source: StoryMap): StoryMap {
+            val cityTiles = Array(source.width * source.height) { index ->
+                val x = index % source.width
+                val y = index / source.width
+                val tile = source.tileTypes[index]
+                when {
+                    // Keep roads clean and walkable.
+                    source.walkableTiles.contains(x to y) -> TileType.DIRT
+                    // Replace tree walls with 2 urban obstacle styles (buildings/houses).
+                    tile == TileType.TREE -> if (Random.nextBoolean()) TileType.TREE else TileType.ROCK
+                    else -> tile
+                }
+            }
+            return StoryMap(
+                width = source.width,
+                height = source.height,
+                visualTheme = VisualTheme.CITY_TILESET,
+                walkableTiles = source.walkableTiles.toSet(),
+                tileTypes = cityTiles,
+                hiddenZoneIndex = source.hiddenZoneIndex.copyOf(),
+                hiddenZones = source.hiddenZones.map { RectF(it) },
+                hiddenZoneEntrances = source.hiddenZoneEntrances.toSet(),
+                secretEntrances = source.secretEntrances.toList(),
+                trophyMainCandidates = source.trophyMainCandidates.toList(),
+                trophySecretCandidates = source.trophySecretCandidates.toList(),
+                trophyHiddenCandidates = source.trophyHiddenCandidates.toList(),
+                startTileX = source.startTileX,
+                startTileY = source.startTileY,
+                exitRect = RectF(source.exitRect)
+            ).apply { randomizeSecretEntrance() }
         }
     }
 }

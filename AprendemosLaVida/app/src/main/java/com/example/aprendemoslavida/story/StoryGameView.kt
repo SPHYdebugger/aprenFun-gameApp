@@ -11,6 +11,7 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.View
+import java.util.ArrayDeque
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.min
@@ -59,8 +60,14 @@ class StoryGameView @JvmOverloads constructor(
     private val playerFallbackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#3866D8") }
     private val tilesetTileSizePx = 32
     private val tilesetColumns = 4
-    private val tilesetBitmap: Bitmap? = buildForestTileset(tilesetTileSizePx)
-    private val tileSourceMap: Map<StoryMap.TileType, Rect> = buildTileSourceMap(tilesetTileSizePx)
+    private val forestTilesetBitmap: Bitmap? = buildForestTileset(tilesetTileSizePx)
+    private val cityRoadTilesetBitmap: Bitmap? = buildCityTileset(tilesetTileSizePx)
+    private val cityBuildingsTilesetBitmap: Bitmap? =
+        loadBitmapByName("tileset_ciudad_removebg")?.let { makeNearWhiteTransparent(it) }
+    private val forestTileSourceMap: Map<StoryMap.TileType, Rect> = buildTileSourceMap(tilesetTileSizePx)
+    private val cityRoadTileSourceMap: Map<StoryMap.TileType, Rect> = buildTileSourceMap(tilesetTileSizePx)
+    private val cityBuildingSprites: List<Rect> =
+        cityBuildingsTilesetBitmap?.let { extractOpaqueSpriteRects(it) }.orEmpty()
     private val trophyBitmap: Bitmap = buildTrophyBitmap(24)
     private val santiBitmap: Bitmap? = loadBitmapByName("story_player2_front")
 
@@ -211,13 +218,35 @@ class StoryGameView @JvmOverloads constructor(
                 val top = ((y - cameraY) * tileSize) + (height / 2f)
                 val rect = RectF(left, top, left + tileSize, top + tileSize)
                 val tileZone = storyMap.hiddenZoneAtTile(x, y)
-                val tileType = if (tileZone >= 0 && tileZone != activeHiddenZone) {
-                    StoryMap.TileType.TREE
-                } else {
-                    storyMap.tileTypeAt(x, y)
+                val tileType = when {
+                    tileZone >= 0 && tileZone != activeHiddenZone -> StoryMap.TileType.TREE
+                    else -> storyMap.tileTypeAt(x, y)
                 }
-                val tileset = tilesetBitmap
-                val src = tileSourceMap[tileType]
+                val (tileset, src) = when (storyMap.visualTheme) {
+                    StoryMap.VisualTheme.FOREST -> {
+                        forestTilesetBitmap to forestTileSourceMap[tileType]
+                    }
+                    StoryMap.VisualTheme.CITY_CLASSIC -> {
+                        cityRoadTilesetBitmap to cityRoadTileSourceMap[tileType]
+                    }
+                    StoryMap.VisualTheme.CITY_TILESET -> {
+                        when (tileType) {
+                            StoryMap.TileType.DIRT, StoryMap.TileType.GRASS -> {
+                                cityRoadTilesetBitmap to cityRoadTileSourceMap[tileType]
+                            }
+                            StoryMap.TileType.TREE, StoryMap.TileType.ROCK -> {
+                                val buildingSet = cityBuildingsTilesetBitmap ?: cityRoadTilesetBitmap
+                                val buildingSrc = if (cityBuildingsTilesetBitmap != null && cityBuildingSprites.isNotEmpty()) {
+                                    val seed = (x * 31) + (y * 17) + if (tileType == StoryMap.TileType.TREE) 0 else 11
+                                    cityBuildingSprites[kotlin.math.abs(seed) % cityBuildingSprites.size]
+                                } else {
+                                    cityRoadTileSourceMap[tileType]
+                                }
+                                buildingSet to buildingSrc
+                            }
+                        }
+                    }
+                }
                 if (tileset != null && src != null) {
                     canvas.drawBitmap(tileset, src, rect, null)
                 } else {
@@ -688,6 +717,83 @@ class StoryGameView @JvmOverloads constructor(
         return map
     }
 
+    private fun extractOpaqueSpriteRects(bitmap: Bitmap): List<Rect> {
+        if (bitmap.width <= 0 || bitmap.height <= 0) return emptyList()
+        val width = bitmap.width
+        val height = bitmap.height
+        val pixels = IntArray(width * height)
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+        val visited = BooleanArray(width * height)
+        val sprites = ArrayList<Rect>()
+
+        fun alphaAt(x: Int, y: Int): Int = (pixels[y * width + x] ushr 24) and 0xFF
+
+        for (startY in 0 until height) {
+            for (startX in 0 until width) {
+                val startIndex = startY * width + startX
+                if (visited[startIndex] || alphaAt(startX, startY) == 0) continue
+
+                var minX = startX
+                var maxX = startX
+                var minY = startY
+                var maxY = startY
+                var count = 0
+
+                val queue = ArrayDeque<Int>()
+                queue.add(startIndex)
+                visited[startIndex] = true
+
+                while (queue.isNotEmpty()) {
+                    val index = queue.removeFirst()
+                    val x = index % width
+                    val y = index / width
+                    count++
+
+                    if (x < minX) minX = x
+                    if (x > maxX) maxX = x
+                    if (y < minY) minY = y
+                    if (y > maxY) maxY = y
+
+                    if (x > 0) {
+                        val left = index - 1
+                        if (!visited[left] && alphaAt(x - 1, y) != 0) {
+                            visited[left] = true
+                            queue.add(left)
+                        }
+                    }
+                    if (x < width - 1) {
+                        val right = index + 1
+                        if (!visited[right] && alphaAt(x + 1, y) != 0) {
+                            visited[right] = true
+                            queue.add(right)
+                        }
+                    }
+                    if (y > 0) {
+                        val up = index - width
+                        if (!visited[up] && alphaAt(x, y - 1) != 0) {
+                            visited[up] = true
+                            queue.add(up)
+                        }
+                    }
+                    if (y < height - 1) {
+                        val down = index + width
+                        if (!visited[down] && alphaAt(x, y + 1) != 0) {
+                            visited[down] = true
+                            queue.add(down)
+                        }
+                    }
+                }
+
+                // Ignore tiny noise components from antialias remnants.
+                if (count >= 120) {
+                    sprites.add(Rect(minX, minY, maxX + 1, maxY + 1))
+                }
+            }
+        }
+
+        return sprites.sortedWith(compareBy<Rect> { it.top }.thenBy { it.left })
+    }
+
     private fun buildForestTileset(tileSize: Int): Bitmap? {
         if (tileSize <= 0) return null
         val rows = 1
@@ -769,6 +875,101 @@ class StoryGameView @JvmOverloads constructor(
                 rect.top + tileSize * 0.55f,
                 rect.right - tileSize * 0.35f,
                 rect.bottom - tileSize * 0.25f,
+                paint
+            )
+        }
+
+        return bitmap
+    }
+
+    private fun buildCityTileset(tileSize: Int): Bitmap? {
+        if (tileSize <= 0) return null
+        val rows = 1
+        val bitmap = Bitmap.createBitmap(tileSize * tilesetColumns, tileSize * rows, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val paint = Paint().apply { isAntiAlias = false }
+
+        fun tileRect(index: Int): Rect {
+            val col = index % tilesetColumns
+            val row = index / tilesetColumns
+            return Rect(col * tileSize, row * tileSize, (col + 1) * tileSize, (row + 1) * tileSize)
+        }
+
+        // DIRT -> road
+        run {
+            val rect = tileRect(0)
+            paint.color = Color.parseColor("#70757A")
+            canvas.drawRect(rect, paint)
+            paint.color = Color.parseColor("#5D6369")
+            for (i in 0 until 22) {
+                val x = rect.left + (i * 5 % tileSize)
+                val y = rect.top + (i * 9 % tileSize)
+                canvas.drawRect(x.toFloat(), y.toFloat(), (x + 2).toFloat(), (y + 1).toFloat(), paint)
+            }
+        }
+
+        // GRASS -> pavement
+        run {
+            val rect = tileRect(1)
+            paint.color = Color.parseColor("#C9CED3")
+            canvas.drawRect(rect, paint)
+            paint.color = Color.parseColor("#B6BCC2")
+            for (i in 0 until 16) {
+                val x = rect.left + (i * 7 % tileSize)
+                canvas.drawLine(x.toFloat(), rect.top.toFloat(), x.toFloat(), rect.bottom.toFloat(), paint)
+            }
+        }
+
+        // TREE -> tall building
+        run {
+            val rect = tileRect(2)
+            paint.color = Color.parseColor("#8FA0B3")
+            canvas.drawRect(rect, paint)
+            paint.color = Color.parseColor("#73869A")
+            canvas.drawRect(
+                rect.left + tileSize * 0.08f,
+                rect.top + tileSize * 0.08f,
+                rect.right - tileSize * 0.08f,
+                rect.bottom - tileSize * 0.12f,
+                paint
+            )
+            paint.color = Color.parseColor("#EAF2FF")
+            for (r in 0 until 3) {
+                for (c in 0 until 3) {
+                    val wx = rect.left + tileSize * (0.18f + c * 0.22f)
+                    val wy = rect.top + tileSize * (0.18f + r * 0.2f)
+                    canvas.drawRect(wx, wy, wx + tileSize * 0.08f, wy + tileSize * 0.08f, paint)
+                }
+            }
+        }
+
+        // ROCK -> house
+        run {
+            val rect = tileRect(3)
+            paint.color = Color.parseColor("#D9B48A")
+            canvas.drawRect(rect, paint)
+            paint.color = Color.parseColor("#A55F4A")
+            canvas.drawRect(
+                rect.left + tileSize * 0.12f,
+                rect.top + tileSize * 0.12f,
+                rect.right - tileSize * 0.12f,
+                rect.bottom - tileSize * 0.12f,
+                paint
+            )
+            paint.color = Color.parseColor("#7C3E30")
+            canvas.drawRect(
+                rect.left + tileSize * 0.18f,
+                rect.top + tileSize * 0.16f,
+                rect.right - tileSize * 0.18f,
+                rect.top + tileSize * 0.28f,
+                paint
+            )
+            paint.color = Color.parseColor("#F8E3C8")
+            canvas.drawRect(
+                rect.left + tileSize * 0.44f,
+                rect.top + tileSize * 0.56f,
+                rect.right - tileSize * 0.44f,
+                rect.bottom - tileSize * 0.12f,
                 paint
             )
         }
@@ -858,6 +1059,29 @@ class StoryGameView @JvmOverloads constructor(
         val id = resources.getIdentifier(name, "drawable", context.packageName)
         if (id == 0) return null
         return BitmapFactory.decodeResource(resources, id)
+    }
+
+    private fun makeNearWhiteTransparent(source: Bitmap): Bitmap {
+        val mutable = source.copy(Bitmap.Config.ARGB_8888, true)
+        val width = mutable.width
+        val height = mutable.height
+        val pixels = IntArray(width * height)
+        mutable.getPixels(pixels, 0, width, 0, 0, width, height)
+
+        for (i in pixels.indices) {
+            val color = pixels[i]
+            val a = (color ushr 24) and 0xFF
+            if (a < 220) continue
+            val r = (color ushr 16) and 0xFF
+            val g = (color ushr 8) and 0xFF
+            val b = color and 0xFF
+            if (r >= 238 && g >= 238 && b >= 238) {
+                pixels[i] = color and 0x00FFFFFF
+            }
+        }
+
+        mutable.setPixels(pixels, 0, width, 0, 0, width, height)
+        return mutable
     }
 
     private fun loadFrameSequence(prefix: String): List<Bitmap> {

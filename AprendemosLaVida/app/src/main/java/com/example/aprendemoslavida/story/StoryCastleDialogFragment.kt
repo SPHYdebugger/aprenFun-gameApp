@@ -397,7 +397,7 @@ class StoryCastleDialogFragment : DialogFragment() {
         }
 
         private fun createRandomOperation(): CastleOperation {
-            val topDigits = Random.nextInt(1, 5)
+            val topDigits = Random.nextInt(1, 4)
             val bottomDigits = Random.nextInt((topDigits - 1).coerceAtLeast(1), topDigits + 1)
             val isAdd = Random.nextBoolean()
             return if (isAdd) {

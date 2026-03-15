@@ -117,7 +117,17 @@ class StoryProgressManager(
             .filter(::isValidTrophyTile)
         val available = fallbackPool.filterNot { used.contains(it) }
         if (available.isNotEmpty()) return available[Random.nextInt(available.size)]
-        return 1 to 1
+
+        val reachableFallback = reachableTiles
+            .filterNot { used.contains(it) }
+            .filter { (x, y) ->
+                storyMap.isWalkable(x, y) && storyMap.tileTypeAt(x, y) != StoryMap.TileType.TREE
+            }
+        if (reachableFallback.isNotEmpty()) {
+            return reachableFallback[Random.nextInt(reachableFallback.size)]
+        }
+
+        return floor(storyMap.startTileX).toInt() to floor(storyMap.startTileY).toInt()
     }
 
     private fun isValidTrophyTile(tile: Pair<Int, Int>): Boolean {

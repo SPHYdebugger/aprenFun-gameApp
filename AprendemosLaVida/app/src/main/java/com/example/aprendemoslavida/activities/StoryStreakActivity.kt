@@ -17,7 +17,6 @@ class StoryStreakActivity : BaseActivity() {
     private var fullText: String = ""
     private var onTypewriterFinished: (() -> Unit)? = null
     private var canContinue: Boolean = false
-    private var launchBonus: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,7 +24,6 @@ class StoryStreakActivity : BaseActivity() {
         setContentView(binding.root)
 
         val state = SettingsManager.consumeStoryStreakLaunch(this)
-        launchBonus = state.bonusForToday
 
         binding.confettiView.start()
         binding.titleText.startAnimation(AnimationUtils.loadAnimation(this, R.anim.streak_pulse))
@@ -91,9 +89,7 @@ class StoryStreakActivity : BaseActivity() {
     }
 
     private fun openStoryGame() {
-        val intent = Intent(this, StoryGameActivity::class.java).apply {
-            putExtra(StoryGameActivity.EXTRA_STREAK_BONUS, launchBonus)
-        }
+        val intent = Intent(this, StoryGameActivity::class.java)
         startActivity(intent)
         finish()
     }

@@ -8,8 +8,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import android.speech.tts.TextToSpeech
-import android.speech.tts.Voice
 import android.view.Gravity
 import android.view.View
 import androidx.activity.OnBackPressedCallback
@@ -30,20 +28,37 @@ import com.example.aprendemoslavida.story.StoryScoreManager
 import com.example.aprendemoslavida.story.StoryTopic
 import com.example.aprendemoslavida.utils.ScoreManager
 import com.example.aprendemoslavida.utils.SettingsManager
-import java.util.Locale
 import kotlin.random.Random
 
 // Hosts the Zelda-like mode and coordinates map, gates, questions and scoring.
 class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionDialogFragment.Listener, StoryCastleDialogFragment.Listener {
-    private enum class Speaker {
-        SOFIA,
-        SANTI
+    private enum class DialogueClip {
+        NONE,
+        SOFIA_1,
+        SOFIA_2,
+        SANTI_1,
+        SANTI_2
     }
 
     private lateinit var binding: ActivityStoryGameBinding
     private lateinit var progressManager: StoryProgressManager
     private lateinit var questionProvider: StoryQuestionProvider
-    private val storyMaps: List<StoryMap> = listOf(StoryMap.createDefault()) + StoryMap.createAllVariants()
+    private val storyMaps: List<StoryMap> =
+        (
+            listOf(StoryMap.createDefault()) +
+                StoryMap.createAllVariants() +
+                StoryMap.createAllCityVariants() +
+                StoryMap.createAllClassicCityVariants()
+            )
+    private val forestMapIndices: List<Int> by lazy {
+        storyMaps.indices.filter { storyMaps[it].visualTheme == StoryMap.VisualTheme.FOREST }
+    }
+    private val cityTilesetMapIndices: List<Int> by lazy {
+        storyMaps.indices.filter { storyMaps[it].visualTheme == StoryMap.VisualTheme.CITY_TILESET }
+    }
+    private val cityClassicMapIndices: List<Int> by lazy {
+        storyMaps.indices.filter { storyMaps[it].visualTheme == StoryMap.VisualTheme.CITY_CLASSIC }
+    }
     private val scoreManager = StoryScoreManager()
     private var countdownTimer: CountDownTimer? = null
     private var totalTimeMs = 4 * 60 * 1000L
@@ -60,9 +75,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     private var musicSpeedMultiplier: Float = 1.0f
     private var musicLoopFadeOutArmed: Boolean = false
     private var musicFadeRunnable: Runnable? = null
-    private var textToSpeech: TextToSpeech? = null
-    private var ttsReady: Boolean = false
-    private var pendingSpeech: Pair<String, Speaker>? = null
+    private var dialoguePlayer: MediaPlayer? = null
 
     private val musicLoopWatcher = object : Runnable {
         override fun run() {
@@ -91,6 +104,8 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     private var gameStarted: Boolean = false
     private var introDeclined: Boolean = false
     private var currentMapIndex: Int = 0
+    private var sessionMapOrder: List<Int> = emptyList()
+    private var currentMapOrderPosition: Int = 0
     private var mapStartScore: Int = 0
     private var sessionMapCount: Int = 5
     private var completedMapsCount: Int = 0
@@ -102,21 +117,18 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     private var santiChallengeRound: Int = -1
     private var santiEncounterDone: Boolean = false
     private var santiEncounterActive: Boolean = false
-    private var streakBonusFromLaunch: Int = 0
 
     companion object {
         private const val SANTI_CASTLE_GATE_ID = -999
         private const val SANTI_REWARD_POINTS = 500
         private const val MUSIC_LOOP_FADE_MS = 220L
         private const val MUSIC_LOOP_WATCHER_INTERVAL_MS = 70L
-        const val EXTRA_STREAK_BONUS = "extra_story_streak_bonus"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityStoryGameBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        streakBonusFromLaunch = intent.getIntExtra(EXTRA_STREAK_BONUS, 0).coerceAtLeast(0)
 
         binding.storyGameView.listener = this
         binding.storyGameView.setQuestionBlocking(true)
@@ -127,7 +139,6 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         soundEnabled = SettingsManager.isSoundEnabled(this)
         updateSoundIcon()
         binding.storySoundButton.setOnClickListener { toggleStorySound() }
-        initTextToSpeech()
         updateHud()
         setupIntroFlow()
 
@@ -272,7 +283,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         binding.introButtonsRow.visibility = View.GONE
         binding.introBackButton.visibility = View.GONE
         binding.introCharacter.setImageResource(R.drawable.story_player2_front)
-        startTypewriter(getString(R.string.story_santi_offer_text), speaker = Speaker.SANTI) {
+        startTypewriter(getString(R.string.story_santi_offer_text), clip = DialogueClip.SANTI_1) {
             if (santiEncounterActive) {
                 binding.introButtonsRow.visibility = View.VISIBLE
             }
@@ -290,7 +301,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         binding.introButtonsRow.visibility = View.GONE
         binding.introBackButton.visibility = View.GONE
         binding.introCharacter.setImageResource(R.drawable.story_player2_front)
-        startTypewriter(text, speaker = Speaker.SANTI)
+        startTypewriter(text, clip = DialogueClip.SANTI_2)
     }
 
     private fun finishSantiEncounter() {
@@ -311,6 +322,9 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     private fun updateHud() {
         binding.scoreText.text = getString(R.string.story_score_format, scoreManager.score)
         binding.timeText.text = formatTime(timeLeftMs)
+        val total = if (::progressManager.isInitialized) progressManager.gates.size else 10
+        val unlocked = if (::progressManager.isInitialized) progressManager.unlockedGateCount() else 0
+        binding.trophyCountText.text = getString(R.string.story_trophy_progress_format, unlocked, total)
     }
 
     private fun showExitDialog() {
@@ -343,9 +357,11 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     }
 
     private fun goToResults(finalScore: Int = scoreManager.score) {
+        val streakBonus = SettingsManager.registerStoryCompletedSession(this)
+        val scoreWithStreak = finalScore + streakBonus
         val totalTime = (SystemClock.elapsedRealtime() - gameStartMs).toInt()
         val intent = Intent(this, ResultActivity::class.java).apply {
-            putExtra(ResultActivity.EXTRA_SCORE, finalScore)
+            putExtra(ResultActivity.EXTRA_SCORE, scoreWithStreak)
             putExtra(ResultActivity.EXTRA_TOTAL_TIME, totalTime)
             putExtra(ResultActivity.EXTRA_TOTAL_QUESTIONS, if (gameStarted) sessionMapCount * 10 else 0)
             putExtra(ResultActivity.EXTRA_GAME_MODE, ScoreManager.MODE_STORY)
@@ -410,9 +426,11 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     }
 
     private fun goToFinalCelebration() {
+        val streakBonus = SettingsManager.registerStoryCompletedSession(this)
+        val scoreWithStreak = scoreManager.score + streakBonus
         val totalTime = (SystemClock.elapsedRealtime() - gameStartMs).toInt()
         val intent = Intent(this, StoryCongratulationsActivity::class.java).apply {
-            putExtra(ResultActivity.EXTRA_SCORE, scoreManager.score)
+            putExtra(ResultActivity.EXTRA_SCORE, scoreWithStreak)
             putExtra(ResultActivity.EXTRA_TOTAL_TIME, totalTime)
             putExtra(ResultActivity.EXTRA_TOTAL_QUESTIONS, sessionMapCount * 10)
             putExtra(ResultActivity.EXTRA_GAME_MODE, ScoreManager.MODE_STORY)
@@ -680,10 +698,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         stopMusicLoopWatcher()
         cancelMusicFade()
         stopMusic()
-        stopSpeakingText()
-        textToSpeech?.shutdown()
-        textToSpeech = null
-        ttsReady = false
+        stopDialogueAudio()
         tone.release()
         super.onDestroy()
     }
@@ -699,7 +714,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         stopMusicLoopWatcher()
         cancelMusicFade()
         musicPlayer?.pause()
-        stopSpeakingText()
+        stopDialogueAudio()
     }
 
     override fun onResume() {
@@ -765,11 +780,11 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
             introDeclined = true
             binding.introButtonsRow.visibility = View.GONE
             binding.introBackButton.visibility = View.GONE
-            startTypewriter(getString(R.string.story_intro_no_text), speaker = Speaker.SOFIA) {
+            startTypewriter(getString(R.string.story_intro_no_text), clip = DialogueClip.SOFIA_2) {
                 binding.introBackButton.visibility = View.VISIBLE
             }
         }
-        startTypewriter(getString(R.string.story_intro_text), speaker = Speaker.SOFIA) {
+        startTypewriter(getString(R.string.story_intro_text), clip = DialogueClip.SOFIA_1) {
             if (!introDeclined) {
                 binding.introButtonsRow.visibility = View.VISIBLE
             }
@@ -778,9 +793,11 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
 
     private fun startStoryGame() {
         gameStarted = true
-        currentMapIndex = 0
         completedMapsCount = 0
         sessionMapCount = SettingsManager.getStoryMapCount(this).coerceIn(3, 5)
+        sessionMapOrder = buildSessionMapOrder(sessionMapCount)
+        currentMapOrderPosition = 0
+        currentMapIndex = sessionMapOrder.firstOrNull() ?: 0
         santiChallengeRound = Random.nextInt(sessionMapCount)
         santiEncounterDone = false
         santiEncounterActive = false
@@ -791,9 +808,6 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         questionProvider = StoryQuestionProvider(this)
         gameStartMs = SystemClock.elapsedRealtime()
         scoreManager.reset()
-        if (streakBonusFromLaunch > 0) {
-            scoreManager.addPoints(streakBonusFromLaunch)
-        }
         loadMap(currentMapIndex)
         binding.topBar.visibility = View.VISIBLE
         binding.mapContainer.visibility = View.VISIBLE
@@ -801,22 +815,33 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         binding.storySoundButton.visibility = View.VISIBLE
         binding.timeText.setTextColor(getColor(R.color.text_primary))
         updateHud()
-        if (streakBonusFromLaunch > 0) {
-            showStoryToast(getString(R.string.story_streak_bonus_toast_format, streakBonusFromLaunch))
-            streakBonusFromLaunch = 0
-        }
         startMusicIfNeeded()
         startCountdown()
     }
 
     private fun nextMapIndex(): Int {
-        if (sessionMapCount == 3) {
-            val candidates = storyMaps.indices.filter { it != currentMapIndex }
-            if (candidates.isNotEmpty()) {
-                return candidates[Random.nextInt(candidates.size)]
-            }
+        val nextPos = currentMapOrderPosition + 1
+        if (nextPos < sessionMapOrder.size) {
+            currentMapOrderPosition = nextPos
+            return sessionMapOrder[nextPos]
         }
-        return (currentMapIndex + 1).coerceAtMost(storyMaps.lastIndex)
+        return currentMapIndex
+    }
+
+    private fun buildSessionMapOrder(mapCount: Int): List<Int> {
+        if (mapCount == 3 &&
+            forestMapIndices.isNotEmpty() &&
+            cityTilesetMapIndices.isNotEmpty() &&
+            cityClassicMapIndices.isNotEmpty()
+        ) {
+            return listOf(
+                forestMapIndices.random(),
+                cityTilesetMapIndices.random(),
+                cityClassicMapIndices.random()
+            ).shuffled()
+        }
+
+        return storyMaps.indices.shuffled().take(mapCount.coerceAtMost(storyMaps.size))
     }
 
     private fun toggleStorySound() {
@@ -825,12 +850,9 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         updateSoundIcon()
         if (soundEnabled) {
             startMusicIfNeeded()
-            pendingSpeech?.let { (text, speaker) ->
-                speakWhileTyping(text, speaker)
-            }
         } else {
             stopMusic()
-            stopSpeakingText()
+            stopDialogueAudio()
         }
     }
 
@@ -938,6 +960,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
 
     private fun loadMap(index: Int) {
         val map = storyMaps[index]
+        map.randomizeSecretEntrance()
         mapStartScore = scoreManager.score
         progressManager = StoryProgressManager(
             questionProvider,
@@ -948,11 +971,14 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         exitingDialog = false
         binding.storyGameView.setMap(map)
         binding.storyGameView.setGates(progressManager.gates)
-        binding.storyGameView.randomizeSecretEntrance()
         val shouldPlaceSanti = !santiEncounterDone && completedMapsCount == santiChallengeRound
         if (shouldPlaceSanti) {
             val santiTile = map.trophyHiddenCandidates
-                .filter { (x, y) -> map.isWalkable(x, y) && map.tileTypeAt(x, y) != StoryMap.TileType.TREE }
+                .filter { (x, y) ->
+                    map.hiddenZoneAtTile(x, y) >= 0 &&
+                        map.isWalkable(x, y) &&
+                        map.tileTypeAt(x, y) != StoryMap.TileType.TREE
+                }
                 .randomOrNull()
             binding.storyGameView.setSantiNpcTile(santiTile)
         } else {
@@ -962,12 +988,12 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         binding.joystickView.resetStick()
     }
 
-    private fun startTypewriter(text: String, speaker: Speaker = Speaker.SOFIA, onFinished: (() -> Unit)? = null) {
+    private fun startTypewriter(text: String, clip: DialogueClip = DialogueClip.NONE, onFinished: (() -> Unit)? = null) {
         cancelTypewriter()
         binding.introText.text = ""
         typewriterFullText = text
         typewriterOnFinished = onFinished
-        speakWhileTyping(text, speaker)
+        playDialogueClip(clip)
         var index = 0
         val runnable = object : Runnable {
             override fun run() {
@@ -976,7 +1002,6 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
                     typewriterRunnable = null
                     typewriterFullText = null
                     typewriterOnFinished = null
-                    pendingSpeech = null
                     callback?.invoke()
                     return
                 }
@@ -994,8 +1019,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         typewriterRunnable = null
         typewriterFullText = null
         typewriterOnFinished = null
-        pendingSpeech = null
-        stopSpeakingText()
+        stopDialogueAudio()
     }
 
     private fun completeTypewriterImmediately() {
@@ -1006,79 +1030,44 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         typewriterFullText = null
         typewriterOnFinished = null
         binding.introText.text = fullText
-        pendingSpeech = null
-        stopSpeakingText()
+        stopDialogueAudio()
         callback?.invoke()
     }
 
-    private fun initTextToSpeech() {
-        textToSpeech = TextToSpeech(this) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                ttsReady = true
-                textToSpeech?.language = Locale.getDefault()
-                pendingSpeech?.let { (text, speaker) ->
-                    speakWhileTyping(text, speaker)
-                }
-            } else {
-                ttsReady = false
-            }
-        }
-    }
-
-    private fun speakWhileTyping(text: String, speaker: Speaker) {
+    private fun playDialogueClip(clip: DialogueClip) {
+        stopDialogueAudio()
         if (!soundEnabled) return
-        pendingSpeech = text to speaker
-        if (!ttsReady) return
-        val tts = textToSpeech ?: return
-
-        val cleanText = text
-            .replace("\n", " ")
-            .replace(Regex("\\s+"), " ")
-            .trim()
-        if (cleanText.isBlank()) return
-
-        val locale = Locale.getDefault()
-        tts.language = locale
-        configureSpeakerVoice(tts, speaker, locale)
-        tts.speak(
-            cleanText,
-            TextToSpeech.QUEUE_FLUSH,
-            null,
-            "story_${speaker.name.lowercase()}_${SystemClock.elapsedRealtime()}"
-        )
-    }
-
-    private fun configureSpeakerVoice(tts: TextToSpeech, speaker: Speaker, locale: Locale) {
-        val voices = tts.voices ?: emptySet<Voice>()
-        val localeVoices = voices.filter { it.locale?.language == locale.language }
-        val keywords = when (speaker) {
-            Speaker.SOFIA -> listOf("female", "woman", "girl", "femenina", "mujer")
-            Speaker.SANTI -> listOf("male", "man", "boy", "masculina", "hombre")
+        val resId = when (clip) {
+            DialogueClip.SOFIA_1 -> R.raw.sofia1
+            DialogueClip.SOFIA_2 -> R.raw.sofia2
+            // Audio files for Santi came with inverted numbering.
+            // Keep semantic mapping: texto1 -> santi1, texto2 -> santi2.
+            DialogueClip.SANTI_1 -> R.raw.santi2
+            DialogueClip.SANTI_2 -> R.raw.santi1
+            DialogueClip.NONE -> 0
         }
-        val selectedVoice = localeVoices.firstOrNull { voice ->
-            val n = voice.name.lowercase()
-            keywords.any { keyword -> n.contains(keyword) }
-        }
-        if (selectedVoice != null) {
-            tts.voice = selectedVoice
-        }
-
-        when (speaker) {
-            Speaker.SOFIA -> {
-                tts.setPitch(1.22f)
-                tts.setSpeechRate(0.96f)
+        if (resId == 0) return
+        dialoguePlayer = MediaPlayer.create(this, resId)?.apply {
+            setVolume(1f, 1f)
+            setOnCompletionListener { player ->
+                player.release()
+                if (dialoguePlayer == player) {
+                    dialoguePlayer = null
+                }
             }
-            Speaker.SANTI -> {
-                tts.setPitch(0.84f)
-                tts.setSpeechRate(0.96f)
-            }
+            start()
         }
     }
 
-    private fun stopSpeakingText() {
-        if (ttsReady) {
-            textToSpeech?.stop()
+    private fun stopDialogueAudio() {
+        dialoguePlayer?.let { player ->
+            try {
+                if (player.isPlaying) player.stop()
+            } catch (_: Exception) {
+            }
+            player.release()
         }
+        dialoguePlayer = null
     }
 
     private fun goToMainMenu() {
