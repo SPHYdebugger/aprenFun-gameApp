@@ -11,7 +11,6 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.View
-import java.util.ArrayDeque
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.min
@@ -62,12 +61,13 @@ class StoryGameView @JvmOverloads constructor(
     private val tilesetColumns = 4
     private val forestTilesetBitmap: Bitmap? = buildForestTileset(tilesetTileSizePx)
     private val cityRoadTilesetBitmap: Bitmap? = buildCityTileset(tilesetTileSizePx)
-    private val cityBuildingsTilesetBitmap: Bitmap? =
-        loadBitmapByName("tileset_ciudad_removebg")?.let { makeNearWhiteTransparent(it) }
+    private val cityBuildingBitmaps: List<Bitmap> = buildCityBuildingBitmaps()
+    private val cityTreeBuildingBitmaps: List<Bitmap> =
+        if (cityBuildingBitmaps.size >= 10) cityBuildingBitmaps.take(5) else cityBuildingBitmaps
+    private val cityRockBuildingBitmaps: List<Bitmap> =
+        if (cityBuildingBitmaps.size >= 10) cityBuildingBitmaps.drop(5) else cityBuildingBitmaps
     private val forestTileSourceMap: Map<StoryMap.TileType, Rect> = buildTileSourceMap(tilesetTileSizePx)
     private val cityRoadTileSourceMap: Map<StoryMap.TileType, Rect> = buildTileSourceMap(tilesetTileSizePx)
-    private val cityBuildingSprites: List<Rect> =
-        cityBuildingsTilesetBitmap?.let { extractOpaqueSpriteRects(it) }.orEmpty()
     private val trophyBitmap: Bitmap = buildTrophyBitmap(24)
     private val santiBitmap: Bitmap? = loadBitmapByName("story_player2_front")
 
@@ -235,10 +235,20 @@ class StoryGameView @JvmOverloads constructor(
                                 cityRoadTilesetBitmap to cityRoadTileSourceMap[tileType]
                             }
                             StoryMap.TileType.TREE, StoryMap.TileType.ROCK -> {
-                                val buildingSet = cityBuildingsTilesetBitmap ?: cityRoadTilesetBitmap
-                                val buildingSrc = if (cityBuildingsTilesetBitmap != null && cityBuildingSprites.isNotEmpty()) {
-                                    val seed = (x * 31) + (y * 17) + if (tileType == StoryMap.TileType.TREE) 0 else 11
-                                    cityBuildingSprites[kotlin.math.abs(seed) % cityBuildingSprites.size]
+                                val buildingPool = when (tileType) {
+                                    StoryMap.TileType.TREE -> cityTreeBuildingBitmaps
+                                    StoryMap.TileType.ROCK -> cityRockBuildingBitmaps
+                                    else -> emptyList()
+                                }
+                                val seed = (x * 31) + (y * 17) + if (tileType == StoryMap.TileType.TREE) 0 else 11
+                                val buildingBitmap = if (buildingPool.isNotEmpty()) {
+                                    buildingPool[kotlin.math.abs(seed) % buildingPool.size]
+                                } else {
+                                    null
+                                }
+                                val buildingSet = buildingBitmap ?: cityRoadTilesetBitmap
+                                val buildingSrc = if (buildingBitmap != null) {
+                                    Rect(0, 0, buildingBitmap.width, buildingBitmap.height)
                                 } else {
                                     cityRoadTileSourceMap[tileType]
                                 }
@@ -717,81 +727,12 @@ class StoryGameView @JvmOverloads constructor(
         return map
     }
 
-    private fun extractOpaqueSpriteRects(bitmap: Bitmap): List<Rect> {
-        if (bitmap.width <= 0 || bitmap.height <= 0) return emptyList()
-        val width = bitmap.width
-        val height = bitmap.height
-        val pixels = IntArray(width * height)
-        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
-        val visited = BooleanArray(width * height)
-        val sprites = ArrayList<Rect>()
-
-        fun alphaAt(x: Int, y: Int): Int = (pixels[y * width + x] ushr 24) and 0xFF
-
-        for (startY in 0 until height) {
-            for (startX in 0 until width) {
-                val startIndex = startY * width + startX
-                if (visited[startIndex] || alphaAt(startX, startY) == 0) continue
-
-                var minX = startX
-                var maxX = startX
-                var minY = startY
-                var maxY = startY
-                var count = 0
-
-                val queue = ArrayDeque<Int>()
-                queue.add(startIndex)
-                visited[startIndex] = true
-
-                while (queue.isNotEmpty()) {
-                    val index = queue.removeFirst()
-                    val x = index % width
-                    val y = index / width
-                    count++
-
-                    if (x < minX) minX = x
-                    if (x > maxX) maxX = x
-                    if (y < minY) minY = y
-                    if (y > maxY) maxY = y
-
-                    if (x > 0) {
-                        val left = index - 1
-                        if (!visited[left] && alphaAt(x - 1, y) != 0) {
-                            visited[left] = true
-                            queue.add(left)
-                        }
-                    }
-                    if (x < width - 1) {
-                        val right = index + 1
-                        if (!visited[right] && alphaAt(x + 1, y) != 0) {
-                            visited[right] = true
-                            queue.add(right)
-                        }
-                    }
-                    if (y > 0) {
-                        val up = index - width
-                        if (!visited[up] && alphaAt(x, y - 1) != 0) {
-                            visited[up] = true
-                            queue.add(up)
-                        }
-                    }
-                    if (y < height - 1) {
-                        val down = index + width
-                        if (!visited[down] && alphaAt(x, y + 1) != 0) {
-                            visited[down] = true
-                            queue.add(down)
-                        }
-                    }
-                }
-
-                // Ignore tiny noise components from antialias remnants.
-                if (count >= 120) {
-                    sprites.add(Rect(minX, minY, maxX + 1, maxY + 1))
-                }
-            }
+    private fun buildCityBuildingBitmaps(): List<Bitmap> {
+        val bitmaps = ArrayList<Bitmap>(10)
+        for (i in 1..10) {
+            loadBitmapByName("casa$i")?.let { bitmaps.add(it) }
         }
-
-        return sprites.sortedWith(compareBy<Rect> { it.top }.thenBy { it.left })
+        return bitmaps
     }
 
     private fun buildForestTileset(tileSize: Int): Bitmap? {
@@ -1059,29 +1000,6 @@ class StoryGameView @JvmOverloads constructor(
         val id = resources.getIdentifier(name, "drawable", context.packageName)
         if (id == 0) return null
         return BitmapFactory.decodeResource(resources, id)
-    }
-
-    private fun makeNearWhiteTransparent(source: Bitmap): Bitmap {
-        val mutable = source.copy(Bitmap.Config.ARGB_8888, true)
-        val width = mutable.width
-        val height = mutable.height
-        val pixels = IntArray(width * height)
-        mutable.getPixels(pixels, 0, width, 0, 0, width, height)
-
-        for (i in pixels.indices) {
-            val color = pixels[i]
-            val a = (color ushr 24) and 0xFF
-            if (a < 220) continue
-            val r = (color ushr 16) and 0xFF
-            val g = (color ushr 8) and 0xFF
-            val b = color and 0xFF
-            if (r >= 238 && g >= 238 && b >= 238) {
-                pixels[i] = color and 0x00FFFFFF
-            }
-        }
-
-        mutable.setPixels(pixels, 0, width, 0, 0, width, height)
-        return mutable
     }
 
     private fun loadFrameSequence(prefix: String): List<Bitmap> {
