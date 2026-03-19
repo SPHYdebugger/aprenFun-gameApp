@@ -62,6 +62,18 @@
     <string name="math_add_sub_mode_title">Sumas / Restas</string>
     <string name="math_add_sub_mode_operations">Operacións ➕➖</string>
     <string name="math_add_sub_mode_castles">Castelos 🏰</string>
+    <string name="castles_tutorial_sums_button">Tutorial castelos de sumas</string>
+    <string name="castles_tutorial_subtractions_button">Tutorial castelos de restas</string>
+    <string name="castles_tutorial_ellipses_title">Para que serven as elipses?</string>
+    <string name="castles_tutorial_example_title">Exemplo resolto</string>
+    <string name="castles_tutorial_sums_title">Tutorial: castelos de sumas</string>
+    <string name="castles_tutorial_sums_ellipses_text">As elipses (os ocos de arriba) úsanse para anotar a levada cando unha columna suma 10 ou máis. Esa levada engádese á seguinte columna da esquerda.</string>
+    <string name="castles_tutorial_sums_example_operation">  1 1\n  4 7\n+ 2 8\n-----\n  7 5</string>
+    <string name="castles_tutorial_sums_example_steps">1. Unidades: 7 + 8 = 15. Escribe 5 abaixo e coloca 1 na elipse das decenas.\n2. Decenas: 4 + 2 + 1 (levada) = 7. Escribe 7.\n3. Resultado final: 75.</string>
+    <string name="castles_tutorial_subtractions_title">Tutorial: castelos de restas</string>
+    <string name="castles_tutorial_subtractions_ellipses_text">As elipses úsanse para marcar o préstamo. Se o número de arriba é menor ca o de abaixo, pides 1 decena á columna esquerda: arriba queda +10 nesa columna e na esquerda réstase 1.</string>
+    <string name="castles_tutorial_subtractions_example_operation">  1\n  5 2\n- 2 8\n-----\n  2 4</string>
+    <string name="castles_tutorial_subtractions_example_steps">1. Unidades: 2 non pode restar 8, así que pides 1 decena. O 2 pasa a 12.\n2. 12 - 8 = 4. Escribe 4.\n3. Decenas: ao prestar, 5 pasa a 4. Agora 4 - 2 = 2.\n4. Resultado final: 24.</string>
     <string name="sumas_torres_title">Castelo de sumas 🏰</string>
     <string name="sumas_torres_question">Resolve a operación en columna</string>
     <string name="sumas_torres_check_button">Comprobar ✅</string>

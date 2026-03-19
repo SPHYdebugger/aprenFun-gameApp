@@ -13,6 +13,14 @@
             android:exported="false"
             android:screenOrientation="portrait" />
         <activity
+            android:name=".activities.CastleSumsTutorialActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".activities.CastleSubtractionsTutorialActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
             android:name=".activities.StoryStreakActivity"
             android:exported="false"
             android:screenOrientation="portrait" />

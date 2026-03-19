@@ -51,6 +51,30 @@
         app:layout_constraintTop_toBottomOf="@id/operationsButton" />
 
     <com.google.android.material.button.MaterialButton
+        android:id="@+id/castlesTutorialSumButton"
+        style="@style/Widget.Aprendemos.Button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginTop="16dp"
+        android:text="@string/castles_tutorial_sums_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/castlesButton" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/castlesTutorialSubButton"
+        style="@style/Widget.Aprendemos.Button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginTop="16dp"
+        android:text="@string/castles_tutorial_subtractions_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/castlesTutorialSumButton" />
+
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/backButton"
         style="@style/Widget.Aprendemos.Button"
         android:layout_width="0dp"
@@ -60,6 +84,7 @@
         android:text="@string/back_button"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/castlesTutorialSubButton" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

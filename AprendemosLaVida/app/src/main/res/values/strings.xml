@@ -62,6 +62,18 @@
     <string name="math_add_sub_mode_title">Sumas / Restas</string>
     <string name="math_add_sub_mode_operations">Operaciones ➕➖</string>
     <string name="math_add_sub_mode_castles">Castillos 🏰</string>
+    <string name="castles_tutorial_sums_button">Tutorial castillos de sumas</string>
+    <string name="castles_tutorial_subtractions_button">Tutorial castillos de restas</string>
+    <string name="castles_tutorial_ellipses_title">¿Para qué sirven las elipses?</string>
+    <string name="castles_tutorial_example_title">Ejemplo resuelto</string>
+    <string name="castles_tutorial_sums_title">Tutorial: castillos de sumas</string>
+    <string name="castles_tutorial_sums_ellipses_text">Las elipses (los huecos de arriba) se usan para anotar la llevada cuando una columna suma 10 o más. Esa llevada se añade a la siguiente columna de la izquierda.</string>
+    <string name="castles_tutorial_sums_example_operation">  1 1\n  4 7\n+ 2 8\n-----\n  7 5</string>
+    <string name="castles_tutorial_sums_example_steps">1. Unidades: 7 + 8 = 15. Escribe 5 abajo y coloca 1 en la elipse de decenas.\n2. Decenas: 4 + 2 + 1 (llevada) = 7. Escribe 7.\n3. Resultado final: 75.</string>
+    <string name="castles_tutorial_subtractions_title">Tutorial: castillos de restas</string>
+    <string name="castles_tutorial_subtractions_ellipses_text">Las elipses se usan para marcar el préstamo. Si el número de arriba es menor que el de abajo, pides 1 decena a la columna izquierda: arriba queda +10 en esa columna y en la izquierda se resta 1.</string>
+    <string name="castles_tutorial_subtractions_example_operation">  1\n  5 2\n- 2 8\n-----\n  2 4</string>
+    <string name="castles_tutorial_subtractions_example_steps">1. Unidades: 2 no puede restar 8, así que pides 1 decena. El 2 pasa a 12.\n2. 12 - 8 = 4. Escribe 4.\n3. Decenas: al prestar, 5 pasa a 4. Ahora 4 - 2 = 2.\n4. Resultado final: 24.</string>
     <string name="sumas_torres_title">Castillo de sumas 🏰</string>
     <string name="sumas_torres_question">Resuelve la operación en columna</string>
     <string name="sumas_torres_check_button">Comprobar ✅</string>

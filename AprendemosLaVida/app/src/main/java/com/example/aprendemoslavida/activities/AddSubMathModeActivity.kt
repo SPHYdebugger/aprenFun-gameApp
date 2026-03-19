@@ -20,6 +20,14 @@ class AddSubMathModeActivity : BaseActivity() {
             startActivity(Intent(this, TorresActivity::class.java))
         }
 
+        binding.castlesTutorialSumButton.setOnClickListener {
+            startActivity(Intent(this, CastleSumsTutorialActivity::class.java))
+        }
+
+        binding.castlesTutorialSubButton.setOnClickListener {
+            startActivity(Intent(this, CastleSubtractionsTutorialActivity::class.java))
+        }
+
         binding.backButton.setOnClickListener { finish() }
     }
 }
