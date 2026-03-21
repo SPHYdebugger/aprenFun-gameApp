@@ -69,7 +69,8 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     private val tone = ToneGenerator(AudioManager.STREAM_MUSIC, 80)
     private var musicPlayer: MediaPlayer? = null
     private val musicHandler = Handler(Looper.getMainLooper())
-    private var soundEnabled: Boolean = true
+    private var globalSoundEnabled: Boolean = true
+    private var storyMusicEnabled: Boolean = true
     private var fastMusicApplied: Boolean = false
     private var musicTargetVolume: Float = 0.55f
     private var musicSpeedMultiplier: Float = 1.0f
@@ -136,7 +137,8 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         binding.mapContainer.visibility = View.GONE
         binding.controlsContainer.visibility = View.GONE
         binding.storySoundButton.visibility = View.GONE
-        soundEnabled = SettingsManager.isSoundEnabled(this)
+        globalSoundEnabled = SettingsManager.isSoundEnabled(this)
+        storyMusicEnabled = SettingsManager.isStoryMusicEnabled(this)
         updateSoundIcon()
         binding.storySoundButton.setOnClickListener { toggleStorySound() }
         updateHud()
@@ -640,7 +642,9 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
                 timeLeftMs = millisUntilFinished
                 if (!warningShown && timeLeftMs <= 60_000L) {
                     warningShown = true
-                    tone.startTone(ToneGenerator.TONE_PROP_BEEP, 300)
+                    if (globalSoundEnabled) {
+                        tone.startTone(ToneGenerator.TONE_PROP_BEEP, 300)
+                    }
                     showStoryToast(getString(R.string.story_time_warning))
                     setMusicSpeed(multiplier = 1.25f)
                 }
@@ -733,12 +737,17 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
                 updateHud()
             }
         }
-        if (gameStarted && soundEnabled) {
+        globalSoundEnabled = SettingsManager.isSoundEnabled(this)
+        storyMusicEnabled = SettingsManager.isStoryMusicEnabled(this)
+        updateSoundIcon()
+        if (gameStarted && canPlayStoryMusic()) {
             try {
                 musicPlayer?.start()
             } catch (_: IllegalStateException) {
                 startMusicIfNeeded()
             }
+        } else {
+            stopMusic()
         }
     }
 
@@ -845,19 +854,18 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     }
 
     private fun toggleStorySound() {
-        soundEnabled = !soundEnabled
-        SettingsManager.setSoundEnabled(this, soundEnabled)
+        storyMusicEnabled = !storyMusicEnabled
+        SettingsManager.setStoryMusicEnabled(this, storyMusicEnabled)
         updateSoundIcon()
-        if (soundEnabled) {
+        if (canPlayStoryMusic()) {
             startMusicIfNeeded()
         } else {
             stopMusic()
-            stopDialogueAudio()
         }
     }
 
     private fun updateSoundIcon() {
-        val icon = if (soundEnabled) {
+        val icon = if (canPlayStoryMusic()) {
             android.R.drawable.ic_lock_silent_mode_off
         } else {
             android.R.drawable.ic_lock_silent_mode
@@ -865,11 +873,11 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         binding.storySoundButton.setImageResource(icon)
         binding.storySoundButton.imageTintList = ColorStateList.valueOf(getColor(R.color.text_primary))
         binding.storySoundButton.contentDescription =
-            getString(if (soundEnabled) R.string.sound_toggle_on else R.string.sound_toggle_off)
+            getString(if (canPlayStoryMusic()) R.string.sound_toggle_on else R.string.sound_toggle_off)
     }
 
     private fun startMusicIfNeeded() {
-        if (!soundEnabled || !gameStarted) return
+        if (!canPlayStoryMusic() || !gameStarted) return
         if (musicPlayer == null) {
             musicPlayer = MediaPlayer.create(this, R.raw.story_music)?.apply {
                 isLooping = false
@@ -1036,7 +1044,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
 
     private fun playDialogueClip(clip: DialogueClip) {
         stopDialogueAudio()
-        if (!soundEnabled) return
+        if (!globalSoundEnabled) return
         val resId = when (clip) {
             DialogueClip.SOFIA_1 -> R.raw.sofia1
             DialogueClip.SOFIA_2 -> R.raw.sofia2
@@ -1074,4 +1082,6 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         startActivity(Intent(this, MainMenuActivity::class.java))
         finish()
     }
+
+    private fun canPlayStoryMusic(): Boolean = globalSoundEnabled && storyMusicEnabled
 }

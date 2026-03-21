@@ -14,6 +14,7 @@ object SettingsManager {
     private const val KEY_STORY_GAME_TIME_MS = "story_game_time_ms"
     private const val KEY_STORY_MAP_COUNT = "story_map_count"
     private const val KEY_SOUND_ENABLED = "sound_enabled"
+    private const val KEY_STORY_MUSIC_ENABLED = "story_music_enabled"
     private const val KEY_STORY_TROPHY_TOPIC_PREFIX = "story_trophy_topic_"
     private const val KEY_STORY_STREAK_DAYS = "story_streak_days"
     private const val KEY_STORY_STREAK_LAST_DAY = "story_streak_last_day" // last day when streak screen was shown
@@ -85,6 +86,16 @@ object SettingsManager {
     fun setSoundEnabled(context: Context, enabled: Boolean) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putBoolean(KEY_SOUND_ENABLED, enabled).apply()
+    }
+
+    fun isStoryMusicEnabled(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_STORY_MUSIC_ENABLED, true)
+    }
+
+    fun setStoryMusicEnabled(context: Context, enabled: Boolean) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(KEY_STORY_MUSIC_ENABLED, enabled).apply()
     }
 
     fun getStoryMapCount(context: Context): Int {
