@@ -1,6 +1,7 @@
 package com.example.aprendemoslavida.activities
 
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.media.MediaPlayer
@@ -12,6 +13,7 @@ import android.view.Gravity
 import android.view.View
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
+import androidx.constraintlayout.widget.ConstraintSet
 import android.media.AudioManager
 import android.media.ToneGenerator
 import android.os.CountDownTimer
@@ -130,6 +132,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
         super.onCreate(savedInstanceState)
         binding = ActivityStoryGameBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        applyGameplayLayoutForOrientation(resources.configuration.orientation)
 
         binding.storyGameView.listener = this
         binding.storyGameView.setQuestionBlocking(true)
@@ -159,6 +162,77 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
                 showExitDialog()
             }
         })
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        applyGameplayLayoutForOrientation(newConfig.orientation)
+    }
+
+    private fun applyGameplayLayoutForOrientation(orientation: Int) {
+        val set = ConstraintSet()
+        set.clone(binding.root)
+        val margin = dp(12)
+
+        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            set.constrainWidth(binding.mapContainer.id, 0)
+            set.constrainHeight(binding.mapContainer.id, 0)
+            set.clear(binding.mapContainer.id, ConstraintSet.TOP)
+            set.clear(binding.mapContainer.id, ConstraintSet.START)
+            set.clear(binding.mapContainer.id, ConstraintSet.END)
+            set.clear(binding.mapContainer.id, ConstraintSet.BOTTOM)
+            set.connect(binding.mapContainer.id, ConstraintSet.TOP, binding.topBar.id, ConstraintSet.BOTTOM, margin)
+            set.connect(binding.mapContainer.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START, margin)
+            set.connect(binding.mapContainer.id, ConstraintSet.END, binding.controlsContainer.id, ConstraintSet.START, margin)
+            set.connect(binding.mapContainer.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, margin)
+
+            set.constrainWidth(binding.controlsContainer.id, dp(190))
+            set.constrainHeight(binding.controlsContainer.id, dp(190))
+            set.clear(binding.controlsContainer.id, ConstraintSet.TOP)
+            set.clear(binding.controlsContainer.id, ConstraintSet.START)
+            set.clear(binding.controlsContainer.id, ConstraintSet.END)
+            set.clear(binding.controlsContainer.id, ConstraintSet.BOTTOM)
+            set.connect(binding.controlsContainer.id, ConstraintSet.TOP, binding.topBar.id, ConstraintSet.BOTTOM, dp(30))
+            set.connect(binding.controlsContainer.id, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END, dp(20))
+
+            set.clear(binding.storySoundButton.id, ConstraintSet.TOP)
+            set.clear(binding.storySoundButton.id, ConstraintSet.START)
+            set.clear(binding.storySoundButton.id, ConstraintSet.END)
+            set.clear(binding.storySoundButton.id, ConstraintSet.BOTTOM)
+            set.connect(binding.storySoundButton.id, ConstraintSet.TOP, binding.controlsContainer.id, ConstraintSet.BOTTOM, dp(14))
+            set.connect(binding.storySoundButton.id, ConstraintSet.START, binding.controlsContainer.id, ConstraintSet.START, 0)
+            set.connect(binding.storySoundButton.id, ConstraintSet.END, binding.controlsContainer.id, ConstraintSet.END, 0)
+        } else {
+            set.constrainWidth(binding.mapContainer.id, 0)
+            set.constrainHeight(binding.mapContainer.id, 0)
+            set.clear(binding.mapContainer.id, ConstraintSet.TOP)
+            set.clear(binding.mapContainer.id, ConstraintSet.START)
+            set.clear(binding.mapContainer.id, ConstraintSet.END)
+            set.clear(binding.mapContainer.id, ConstraintSet.BOTTOM)
+            set.connect(binding.mapContainer.id, ConstraintSet.TOP, binding.topBar.id, ConstraintSet.BOTTOM, margin)
+            set.connect(binding.mapContainer.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START, margin)
+            set.connect(binding.mapContainer.id, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END, margin)
+            set.connect(binding.mapContainer.id, ConstraintSet.BOTTOM, binding.controlsContainer.id, ConstraintSet.TOP, margin)
+
+            set.constrainWidth(binding.controlsContainer.id, dp(190))
+            set.constrainHeight(binding.controlsContainer.id, dp(190))
+            set.clear(binding.controlsContainer.id, ConstraintSet.TOP)
+            set.clear(binding.controlsContainer.id, ConstraintSet.START)
+            set.clear(binding.controlsContainer.id, ConstraintSet.END)
+            set.clear(binding.controlsContainer.id, ConstraintSet.BOTTOM)
+            set.connect(binding.controlsContainer.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, dp(16))
+            set.connect(binding.controlsContainer.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START, 0)
+            set.connect(binding.controlsContainer.id, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END, 0)
+
+            set.clear(binding.storySoundButton.id, ConstraintSet.TOP)
+            set.clear(binding.storySoundButton.id, ConstraintSet.START)
+            set.clear(binding.storySoundButton.id, ConstraintSet.END)
+            set.clear(binding.storySoundButton.id, ConstraintSet.BOTTOM)
+            set.connect(binding.storySoundButton.id, ConstraintSet.TOP, binding.mapContainer.id, ConstraintSet.BOTTOM, dp(6))
+            set.connect(binding.storySoundButton.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START, dp(20))
+        }
+
+        set.applyTo(binding.root)
     }
 
     override fun onGateBlocked(gateId: Int) {

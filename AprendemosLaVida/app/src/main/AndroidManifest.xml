@@ -26,8 +26,8 @@
             android:screenOrientation="portrait" />
         <activity
             android:name=".activities.StoryGameActivity"
-            android:exported="false"
-            android:screenOrientation="portrait" />
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="false" />
         <activity
             android:name=".activities.StoryCongratulationsActivity"
             android:exported="false"
