@@ -51,6 +51,18 @@
         app:layout_constraintTop_toBottomOf="@id/questionsModeButton" />
 
     <com.google.android.material.button.MaterialButton
+        android:id="@+id/customizeAvatarButton"
+        style="@style/Widget.Aprendemos.Button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginTop="16dp"
+        android:text="@string/game_type_avatar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/storyModeButton" />
+
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/backButton"
         style="@style/Widget.Aprendemos.Button"
         android:layout_width="0dp"

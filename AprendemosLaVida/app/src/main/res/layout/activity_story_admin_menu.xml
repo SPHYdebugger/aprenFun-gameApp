@@ -57,6 +57,18 @@
         app:layout_constraintTop_toBottomOf="@id/gameTimeButton" />
 
     <com.google.android.material.button.MaterialButton
+        android:id="@+id/resetGlobalPointsButton"
+        style="@style/Widget.Aprendemos.Button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginTop="14dp"
+        android:text="@string/story_hidden_menu_reset_global_points"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/mapCountButton" />
+
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/backButton"
         style="@style/Widget.Aprendemos.Button"
         android:layout_width="0dp"

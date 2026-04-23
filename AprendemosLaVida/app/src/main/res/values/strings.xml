@@ -15,6 +15,7 @@
     <string name="game_type_title">Tipo de juego</string>
     <string name="game_type_questions">MODO PREGUNTAS</string>
     <string name="game_type_story">MODO HISTORIA</string>
+    <string name="game_type_avatar">PERSONALIZAR AVATAR</string>
     <string name="social_theme_0">Tema 0. Sistema Solar</string>
     <string name="social_theme_1">Tema 1. Paisaje</string>
 
@@ -231,6 +232,53 @@
     <string name="social_t1_q20_a1">De montaña</string><string name="social_t1_q20_a2">De costa</string><string name="social_t1_q20_a3">De ciudad</string><string name="social_t1_q20_a4">Industrial</string>
 
     <string name="splash_title">AprenFun!!</string>
+    <string name="avatar_custom_title">Crea tu avatar</string>
+    <string name="avatar_custom_subtitle">Personaliza a Sofía antes de jugar</string>
+    <string name="avatar_preview_cd">Vista previa del avatar</string>
+    <string name="avatar_clothes_label">Ropa</string>
+    <string name="avatar_shirt_label">Zona Camisa</string>
+    <string name="avatar_pants_label">Zona Pantalón</string>
+    <string name="avatar_shoes_label">Zona Zapatos</string>
+    <string name="avatar_hair_label">Pelo</string>
+    <string name="avatar_skin_label">Piel</string>
+    <string name="avatar_save_button">Guardar avatar</string>
+    <string name="avatar_restore_button">Restaurar colores</string>
+    <string name="avatar_color_option_cd">Color de personalización</string>
+    <string name="avatar_global_points_format">Puntuación global: %1$d</string>
+    <string name="avatar_tab_avatar">Avatar</string>
+    <string name="avatar_tab_clothes">Ropa</string>
+    <string name="avatar_tab_accessories">Complementos</string>
+    <string name="avatar_clothes_section_desc">Desbloquea nuevas prendas cada 4000 puntos (alternando con complementos).</string>
+    <string name="avatar_accessories_section_desc">Accesorios coleccionables. Cada 2000 puntos se desbloquea una pieza alternando ropa/complemento.</string>
+    <string name="avatar_item_locked_toast">Accesorio bloqueado. Consigue más puntos globales para desbloquearlo.</string>
+    <string name="avatar_unlock_progress_default">Próximo desbloqueo en 2000 puntos</string>
+    <string name="avatar_unlock_progress_format">Próximo desbloqueo en %1$d puntos</string>
+    <string name="avatar_unlock_progress_max">Has alcanzado todos los desbloqueos disponibles</string>
+    <string name="avatar_new_title">Crea tu avatar</string>
+    <string name="avatar_new_subtitle">Personaliza tu personaje</string>
+    <string name="avatar_preview_label">Vista previa</string>
+    <string name="avatar_step_gender">Paso 1 - Elegir personaje</string>
+    <string name="avatar_gender_label">Género</string>
+    <string name="avatar_gender_boy">Niño</string>
+    <string name="avatar_gender_girl">Niña</string>
+    <string name="avatar_step_traits">Paso 2 - Rasgos</string>
+    <string name="avatar_traits_label">Rasgos</string>
+    <string name="avatar_hair_style_label">Forma de pelo</string>
+    <string name="avatar_hair_color_label">Color de pelo</string>
+    <string name="avatar_skin_tone_label">Color de piel</string>
+    <string name="avatar_step_outfit">Paso 3 - Vestimenta</string>
+    <string name="avatar_outfit_label">Vestimenta</string>
+    <string name="avatar_save_button_new">Guardar</string>
+    <string name="avatar_saved_status">Avatar guardado</string>
+    <string name="avatar_selected_gender_format">Seleccionado: %1$s</string>
+    <string name="avatar_outfit_1_cd">Traje 1</string>
+    <string name="avatar_outfit_2_cd">Traje 2</string>
+    <string name="avatar_outfit_3_cd">Traje 3</string>
+    <string name="avatar_outfit_4_cd">Traje 4</string>
+    <string name="avatar_outfit_5_cd">Traje 5</string>
+    <string name="avatar_outfit_6_cd">Traje 6</string>
+    <string name="avatar_outfit_lock_format">🔒 %1$d</string>
+    <string name="avatar_outfit_locked_points_toast">Puntos globales: %1$d. Te faltan %2$d puntos para desbloquear esta vestimenta.</string>
 
     <string name="story_score_default">Puntos: 0</string>
     <string name="story_score_format">Puntos: %1$d</string>
@@ -280,6 +328,9 @@
     <string name="story_hidden_menu_topic_button">Temática</string>
     <string name="story_hidden_menu_time_button">Tiempo de juego</string>
     <string name="story_hidden_menu_map_count_button">Número de mapas</string>
+    <string name="story_hidden_menu_reset_global_points">Resetear puntuación global</string>
+    <string name="story_hidden_menu_reset_global_points_confirm">¿Quieres resetear la puntuación global acumulada?</string>
+    <string name="story_hidden_menu_reset_global_points_done">Puntuación global reseteada</string>
     <string name="story_map_count_title">Número de mapas</string>
     <string name="story_map_count_mode_5">Partida completa: 5 mapas (10 min)</string>
     <string name="story_map_count_mode_3">Partida rápida: 3 mapas (6 min)</string>

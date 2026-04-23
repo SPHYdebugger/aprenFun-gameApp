@@ -27,3 +27,6 @@ Thumbs.db
 
 # Misc
 captures/
+
+# Avatar preview renders
+app/src/main/assets/avatar/_preview_new_*.png

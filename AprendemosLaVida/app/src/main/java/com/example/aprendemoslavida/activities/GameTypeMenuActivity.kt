@@ -32,6 +32,10 @@ class GameTypeMenuActivity : BaseActivity() {
             startActivity(target)
         }
 
+        binding.customizeAvatarButton.setOnClickListener {
+            startActivity(Intent(this, AvatarCustomizationActivity::class.java))
+        }
+
         binding.backButton.setOnClickListener { finish() }
     }
 }

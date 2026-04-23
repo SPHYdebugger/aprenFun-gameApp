@@ -20,6 +20,7 @@ object SettingsManager {
     private const val KEY_STORY_STREAK_LAST_DAY = "story_streak_last_day" // last day when streak screen was shown
     private const val KEY_STORY_STREAK_LAST_COMPLETED_DAY = "story_streak_last_completed_day"
     private const val KEY_STORY_STREAK_LAST_BONUS_DAY = "story_streak_last_bonus_day"
+    private const val KEY_GLOBAL_POINTS = "global_points"
     private const val STORY_TROPHY_COUNT = 10
 
     private const val DEFAULT_QUESTION_TIME_MS = 12000
@@ -108,6 +109,24 @@ object SettingsManager {
         val safe = if (AVAILABLE_STORY_MAP_COUNTS.contains(mapCount)) mapCount else DEFAULT_STORY_MAP_COUNT
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putInt(KEY_STORY_MAP_COUNT, safe).apply()
+    }
+
+    fun getGlobalPoints(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt(KEY_GLOBAL_POINTS, 0).coerceAtLeast(0)
+    }
+
+    fun addGlobalPoints(context: Context, points: Int): Int {
+        if (points <= 0) return getGlobalPoints(context)
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val updated = (prefs.getInt(KEY_GLOBAL_POINTS, 0) + points).coerceAtLeast(0)
+        prefs.edit().putInt(KEY_GLOBAL_POINTS, updated).apply()
+        return updated
+    }
+
+    fun resetGlobalPoints(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putInt(KEY_GLOBAL_POINTS, 0).apply()
     }
 
     fun defaultStoryTimeMsForMapCount(mapCount: Int): Int {

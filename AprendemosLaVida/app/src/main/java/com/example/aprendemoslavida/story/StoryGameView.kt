@@ -517,7 +517,7 @@ class StoryGameView @JvmOverloads constructor(
         // Option 0: full tileset in a 4x4 grid (rows: up, right, down, left).
         val sheet = loadBitmapByName("story_player_sheet")
         if (sheet != null && sheet.width >= playerFrameCount && sheet.height >= 4) {
-            playerTilesetBitmap = sheet
+            playerTilesetBitmap = stylePlayerBitmap(sheet)
             playerTilesetTileSize = sheet.width / playerFrameCount
             return
         }
@@ -525,7 +525,7 @@ class StoryGameView @JvmOverloads constructor(
         // Option 0b: generate a tileset from a base sprite named story_player_base.
         val base = loadBitmapByName("story_player_base")
         if (base != null) {
-            val generated = buildPlayerTileset(base, playerFrameCount)
+            val generated = buildPlayerTileset(stylePlayerBitmap(base), playerFrameCount)
             playerTilesetBitmap = generated.first
             playerTilesetTileSize = generated.second
             return
@@ -534,18 +534,19 @@ class StoryGameView @JvmOverloads constructor(
         // Option 0: single frontal sprite reused for all directions.
         val front = loadBitmapByName("story_player_front")
         if (front != null) {
-            playerUpBitmap = front
-            playerDownBitmap = front
-            playerLeftBitmap = front
-            playerRightBitmap = front
+            val styledFront = stylePlayerBitmap(front)
+            playerUpBitmap = styledFront
+            playerDownBitmap = styledFront
+            playerLeftBitmap = styledFront
+            playerRightBitmap = styledFront
             return
         }
 
         // Option A: separate drawables named story_player_up/down/left/right.
-        playerUpBitmap = loadBitmapByName("story_player_up")
-        playerDownBitmap = loadBitmapByName("story_player_down")
-        playerLeftBitmap = loadBitmapByName("story_player_left")
-        playerRightBitmap = loadBitmapByName("story_player_right")
+        playerUpBitmap = loadBitmapByName("story_player_up")?.let(::stylePlayerBitmap)
+        playerDownBitmap = loadBitmapByName("story_player_down")?.let(::stylePlayerBitmap)
+        playerLeftBitmap = loadBitmapByName("story_player_left")?.let(::stylePlayerBitmap)
+        playerRightBitmap = loadBitmapByName("story_player_right")?.let(::stylePlayerBitmap)
 
         // Option B: single 2x2 sheet named story_player_sheet (up, right, left, down).
         if (playerUpBitmap == null || playerDownBitmap == null || playerLeftBitmap == null || playerRightBitmap == null) {
@@ -553,10 +554,10 @@ class StoryGameView @JvmOverloads constructor(
             if (sheet != null && sheet.width >= 2 && sheet.height >= 2) {
                 val cellW = sheet.width / 2
                 val cellH = sheet.height / 2
-                playerUpBitmap = playerUpBitmap ?: Bitmap.createBitmap(sheet, 0, 0, cellW, cellH)
-                playerRightBitmap = playerRightBitmap ?: Bitmap.createBitmap(sheet, cellW, 0, cellW, cellH)
-                playerLeftBitmap = playerLeftBitmap ?: Bitmap.createBitmap(sheet, 0, cellH, cellW, cellH)
-                playerDownBitmap = playerDownBitmap ?: Bitmap.createBitmap(sheet, cellW, cellH, cellW, cellH)
+                playerUpBitmap = playerUpBitmap ?: stylePlayerBitmap(Bitmap.createBitmap(sheet, 0, 0, cellW, cellH))
+                playerRightBitmap = playerRightBitmap ?: stylePlayerBitmap(Bitmap.createBitmap(sheet, cellW, 0, cellW, cellH))
+                playerLeftBitmap = playerLeftBitmap ?: stylePlayerBitmap(Bitmap.createBitmap(sheet, 0, cellH, cellW, cellH))
+                playerDownBitmap = playerDownBitmap ?: stylePlayerBitmap(Bitmap.createBitmap(sheet, cellW, cellH, cellW, cellH))
             }
         }
 
@@ -1009,6 +1010,10 @@ class StoryGameView @JvmOverloads constructor(
             list.add(bmp)
         }
         return list
+    }
+
+    private fun stylePlayerBitmap(bitmap: Bitmap): Bitmap {
+        return bitmap
     }
 
     private fun clampCameraCoord(value: Float, halfView: Float, mapSize: Float): Float {

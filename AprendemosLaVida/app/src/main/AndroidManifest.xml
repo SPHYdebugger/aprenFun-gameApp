@@ -37,6 +37,10 @@
             android:exported="false"
             android:screenOrientation="portrait" />
         <activity
+            android:name=".activities.AvatarCustomizationActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
             android:name=".activities.AddSubMathGameActivity"
             android:exported="false"
             android:screenOrientation="portrait" />

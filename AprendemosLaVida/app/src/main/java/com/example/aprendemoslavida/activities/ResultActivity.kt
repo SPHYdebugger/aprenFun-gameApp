@@ -18,6 +18,7 @@ import java.util.Locale
 class ResultActivity : BaseActivity() {
     private lateinit var binding: ActivityResultBinding
     private var scoreSaved: Boolean = false
+    private var globalScoreRegistered: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,6 +31,12 @@ class ResultActivity : BaseActivity() {
         val mode = intent.getStringExtra(EXTRA_GAME_MODE) ?: ScoreManager.MODE_NATURAL
         val socialTopic = intent.getIntExtra(EXTRA_SOCIAL_TOPIC, 0)
         val mathType = intent.getStringExtra(EXTRA_MATH_TYPE) ?: MathTopicsActivity.TYPE_MULTIPLICATION
+        globalScoreRegistered = savedInstanceState?.getBoolean(STATE_GLOBAL_SCORE_REGISTERED, false) ?: false
+
+        if (!globalScoreRegistered) {
+            SettingsManager.addGlobalPoints(this, score)
+            globalScoreRegistered = true
+        }
 
         binding.scoreText.text = getString(R.string.result_score_format, score)
         binding.timeText.text = getString(R.string.result_time_format, totalTime / 1000)
@@ -124,7 +131,13 @@ class ResultActivity : BaseActivity() {
         }
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(STATE_GLOBAL_SCORE_REGISTERED, globalScoreRegistered)
+    }
+
     companion object {
+        private const val STATE_GLOBAL_SCORE_REGISTERED = "state_global_score_registered"
         const val EXTRA_SCORE = "extra_score"
         const val EXTRA_TOTAL_TIME = "extra_total_time"
         const val EXTRA_TOTAL_QUESTIONS = "extra_total_questions"
