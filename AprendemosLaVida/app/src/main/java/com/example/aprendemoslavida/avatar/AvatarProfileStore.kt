@@ -43,5 +43,10 @@ object AvatarProfileStore {
         }
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putString(KEY_PROFILE_JSON, json.toString()).apply()
+        try {
+            StoryPlayerSpriteSheetStore.ensureGenerated(context, profile)
+        } catch (_: Exception) {
+            // If dynamic generation fails we keep gameplay working with the bundled fallback sprites.
+        }
     }
 }

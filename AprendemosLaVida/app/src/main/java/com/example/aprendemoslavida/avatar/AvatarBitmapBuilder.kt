@@ -18,9 +18,7 @@ object AvatarBitmapBuilder {
 
     private val BODY_PATHS = arrayOf(
         "${AVATAR_ROOT}base_body_skin_01.png",
-        "${AVATAR_ROOT}base_body_skin_02.png",
         "${AVATAR_ROOT}base_body_skin_03.png",
-        "${AVATAR_ROOT}base_body_skin_04.png",
         "${AVATAR_ROOT}base_body_skin_05.png"
     )
 

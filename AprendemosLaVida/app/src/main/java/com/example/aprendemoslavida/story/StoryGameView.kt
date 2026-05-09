@@ -11,6 +11,8 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.View
+import com.example.aprendemoslavida.avatar.AvatarProfileStore
+import com.example.aprendemoslavida.avatar.StoryPlayerSpriteSheetStore
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.min
@@ -75,7 +77,7 @@ class StoryGameView @JvmOverloads constructor(
         resources,
         com.example.aprendemoslavida.R.drawable.splash_image
     )
-    private val playerIdleBitmap: Bitmap? by lazy { loadBitmapByName("story_player_base") }
+    private var playerIdleBitmap: Bitmap? = null
     private var playerUpBitmap: Bitmap? = null
     private var playerDownBitmap: Bitmap? = null
     private var playerLeftBitmap: Bitmap? = null
@@ -490,6 +492,35 @@ class StoryGameView @JvmOverloads constructor(
     }
 
     private fun loadDirectionalSprites() {
+        playerUpBitmap = null
+        playerDownBitmap = null
+        playerLeftBitmap = null
+        playerRightBitmap = null
+        playerUpFrames = emptyList()
+        playerRightFrames = emptyList()
+        playerDownFrames = emptyList()
+        playerLeftFrames = emptyList()
+        playerTilesetBitmap = null
+        playerTilesetTileSize = 0
+        playerIdleBitmap = null
+
+        try {
+            StoryPlayerSpriteSheetStore.ensureGenerated(context, AvatarProfileStore.load(context))
+        } catch (_: Exception) {
+            // Ignore and continue with bundled resources.
+        }
+
+        val dynamicSheet = StoryPlayerSpriteSheetStore.load(context)
+        if (dynamicSheet != null &&
+            dynamicSheet.width >= playerFrameCount &&
+            dynamicSheet.height >= 4
+        ) {
+            playerTilesetBitmap = stylePlayerBitmap(dynamicSheet)
+            playerTilesetTileSize = dynamicSheet.width / playerFrameCount
+            playerIdleBitmap = extractTilesetFrame(playerTilesetBitmap, row = 2, col = 0)
+            return
+        }
+
         // Option -1: explicit frame-by-frame resources:
         // player_frames_<direction>_<1..4>
         val upFrames = loadFrameSequence("player_frames_up")
@@ -511,6 +542,7 @@ class StoryGameView @JvmOverloads constructor(
             playerRightBitmap = rightFrames.firstOrNull()
             playerDownBitmap = downFrames.firstOrNull()
             playerLeftBitmap = leftFrames.firstOrNull()
+            playerIdleBitmap = playerDownBitmap
             return
         }
 
@@ -519,6 +551,7 @@ class StoryGameView @JvmOverloads constructor(
         if (sheet != null && sheet.width >= playerFrameCount && sheet.height >= 4) {
             playerTilesetBitmap = stylePlayerBitmap(sheet)
             playerTilesetTileSize = sheet.width / playerFrameCount
+            playerIdleBitmap = extractTilesetFrame(playerTilesetBitmap, row = 2, col = 0)
             return
         }
 
@@ -528,6 +561,7 @@ class StoryGameView @JvmOverloads constructor(
             val generated = buildPlayerTileset(stylePlayerBitmap(base), playerFrameCount)
             playerTilesetBitmap = generated.first
             playerTilesetTileSize = generated.second
+            playerIdleBitmap = extractTilesetFrame(playerTilesetBitmap, row = 2, col = 0)
             return
         }
 
@@ -539,6 +573,7 @@ class StoryGameView @JvmOverloads constructor(
             playerDownBitmap = styledFront
             playerLeftBitmap = styledFront
             playerRightBitmap = styledFront
+            playerIdleBitmap = styledFront
             return
         }
 
@@ -560,6 +595,8 @@ class StoryGameView @JvmOverloads constructor(
                 playerDownBitmap = playerDownBitmap ?: stylePlayerBitmap(Bitmap.createBitmap(sheet, cellW, cellH, cellW, cellH))
             }
         }
+
+        playerIdleBitmap = playerDownBitmap ?: playerIdleBitmap ?: loadBitmapByName("story_player_base")
 
         // Fallback: mirror right sprite if left is missing.
         if (playerLeftBitmap == null && playerRightBitmap != null) {
@@ -1010,6 +1047,18 @@ class StoryGameView @JvmOverloads constructor(
             list.add(bmp)
         }
         return list
+    }
+
+    private fun extractTilesetFrame(sheet: Bitmap?, row: Int, col: Int): Bitmap? {
+        val source = sheet ?: return null
+        if (playerFrameCount <= 0) return null
+        val tile = source.width / playerFrameCount
+        if (tile <= 0) return null
+        val left = col * tile
+        val top = row * tile
+        if (left < 0 || top < 0) return null
+        if (left + tile > source.width || top + tile > source.height) return null
+        return Bitmap.createBitmap(source, left, top, tile, tile)
     }
 
     private fun stylePlayerBitmap(bitmap: Bitmap): Bitmap {

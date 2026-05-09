@@ -255,7 +255,7 @@ class AvatarCustomizationActivity : BaseActivity() {
         private val HAIR_STYLE_GIRL = arrayOf("Largo", "Coletas", "Bob")
 
         private val HAIR_COLOR_NAMES = arrayOf("Negro", "Castano", "Rubio")
-        private val SKIN_NAMES = arrayOf("Tono 1", "Tono 2", "Tono 3", "Tono 4", "Tono 5")
+        private val SKIN_NAMES = arrayOf("Tono 1", "Tono 2", "Tono 3")
         private val OUTFIT_UNLOCK_POINTS = intArrayOf(10000, 25000, 50000, 80000, 100000, 150000)
 
         private val OUTFIT_BOY_PATHS = arrayOf(
