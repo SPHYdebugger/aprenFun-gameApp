@@ -7,20 +7,34 @@ import android.media.ToneGenerator
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import com.example.aprendemoslavida.R
+import com.example.aprendemoslavida.data.model.GameAnswer
+import com.example.aprendemoslavida.data.model.GameSession
+import com.example.aprendemoslavida.data.model.PresentedQuestion
+import com.example.aprendemoslavida.data.network.ApiClient
+import com.example.aprendemoslavida.data.network.NetworkResult
+import com.example.aprendemoslavida.data.repository.GameSessionRepository
 import com.example.aprendemoslavida.databinding.ActivityGameBinding
-import com.example.aprendemoslavida.utils.GameManager
-import com.example.aprendemoslavida.utils.QuestionScoring
 import com.example.aprendemoslavida.utils.SettingsManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class GameActivity : BaseActivity() {
+
     private lateinit var binding: ActivityGameBinding
-    private val gameManager by lazy { GameManager(this) }
+    private lateinit var gameSessionRepository: GameSessionRepository
+    private lateinit var apiClient: ApiClient
+
+    private var activeSession: GameSession? = null
+    private var currentQuestion: PresentedQuestion? = null
+
     private var timer: CountDownTimer? = null
     private var timeLeftMs: Int = 12000
     private val tone = ToneGenerator(AudioManager.STREAM_MUSIC, 80)
-    private var currentCorrectIndex: Int = 0
     private var defaultAnswerTint: ColorStateList? = null
 
     private var questionTimeMs = 12000
@@ -32,6 +46,9 @@ class GameActivity : BaseActivity() {
         binding = ActivityGameBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        apiClient = ApiClient.getInstance(this)
+        gameSessionRepository = GameSessionRepository(apiClient.gameSessionApiService)
+
         binding.answer1.setOnClickListener { handleAnswer(0) }
         binding.answer2.setOnClickListener { handleAnswer(1) }
         binding.answer3.setOnClickListener { handleAnswer(2) }
@@ -40,28 +57,64 @@ class GameActivity : BaseActivity() {
         defaultAnswerTint = binding.answer1.backgroundTintList
 
         questionTimeMs = SettingsManager.getQuestionTimeMs(this)
-        showQuestion()
+
+        initRemoteGameSession()
     }
 
-    private fun showQuestion() {
-        val question = gameManager.currentQuestion() ?: return
-        resetAnswerColors()
-        val shuffled = question.options
-            .mapIndexed { index, option -> option to (index == question.correctIndex) }
-            .shuffled()
-        currentCorrectIndex = shuffled.indexOfFirst { it.second }
+    private fun initRemoteGameSession() {
+        val childId = apiClient.tokenStorage.getActiveChildId()
+        if (childId.isNullOrBlank()) {
+            Toast.makeText(this, "Selecciona un perfil infantil para jugar online", Toast.LENGTH_LONG).show()
+            startActivity(Intent(this, ChildSelectorActivity::class.java))
+            finish()
+            return
+        }
 
-        binding.questionText.text = question.text
-        binding.answer1.text = shuffled[0].first
-        binding.answer2.text = shuffled[1].first
-        binding.answer3.text = shuffled[2].first
-        binding.answer4.text = shuffled[3].first
-        binding.progressText.text = getString(
-            R.string.game_progress_format,
-            gameManager.currentIndex + 1,
-            gameManager.totalQuestions()
-        )
+        enableAnswers(false)
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = gameSessionRepository.createGameSession(
+                childProfileId = childId,
+                subjectCode = "NATURAL"
+            )
+            withContext(Dispatchers.Main) {
+                when (result) {
+                    is NetworkResult.Success -> {
+                        activeSession = result.data
+                        displayQuestion(result.data.currentQuestion)
+                    }
+                    is NetworkResult.Error -> {
+                        Toast.makeText(this@GameActivity, "Error al crear la sesión: ${result.problem.detail}", Toast.LENGTH_LONG).show()
+                        finish()
+                    }
+                    is NetworkResult.Exception -> {
+                        Toast.makeText(this@GameActivity, "Sin conexión al servidor", Toast.LENGTH_LONG).show()
+                        finish()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun displayQuestion(q: PresentedQuestion?) {
+        if (q == null) {
+            goToResults()
+            return
+        }
+        currentQuestion = q
+        resetAnswerColors()
+
+        binding.questionText.text = q.prompt
+        val opts = q.options
+        binding.answer1.text = opts.getOrNull(0)?.text ?: ""
+        binding.answer2.text = opts.getOrNull(1)?.text ?: ""
+        binding.answer3.text = opts.getOrNull(2)?.text ?: ""
+        binding.answer4.text = opts.getOrNull(3)?.text ?: ""
+
+        val pos = q.position + 1
+        val total = activeSession?.totalQuestions ?: 20
+        binding.progressText.text = getString(R.string.game_progress_format, pos, total)
         binding.pointsText.visibility = View.INVISIBLE
+
         enableAnswers(true)
         startTimer(questionTimeMs)
     }
@@ -88,52 +141,80 @@ class GameActivity : BaseActivity() {
     }
 
     private fun handleAnswer(selectedIndex: Int) {
-        val question = gameManager.currentQuestion() ?: return
+        val session = activeSession ?: return
+        val q = currentQuestion ?: return
         if (exitDialogShowing) return
         timer?.cancel()
         enableAnswers(false)
 
-        val elapsed = questionTimeMs - timeLeftMs
-        gameManager.addTime(elapsed)
+        val selectedOptionId = q.options.getOrNull(selectedIndex)?.id ?: return
 
-        val correct = selectedIndex == currentCorrectIndex
-        if (correct) {
-            val points = QuestionScoring.pointsForElapsed(elapsed, questionTimeMs)
-            gameManager.addScore(points)
-            gameManager.addCorrect()
-            showPoints(getString(R.string.points_correct_format, points))
-            tone.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
-            showCorrectAnswerFeedback(selectedIndex)
-            binding.root.postDelayed({
-                goNext()
-            }, answerFeedbackMs)
-        } else {
-            showPoints(getString(R.string.points_wrong))
-            tone.startTone(ToneGenerator.TONE_CDMA_ABBR_ALERT, 200)
-            showWrongAnswerFeedback(selectedIndex)
-            binding.root.postDelayed({
-                goNext()
-            }, answerFeedbackMs)
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = gameSessionRepository.submitGameAnswer(
+                sessionId = session.id,
+                sessionQuestionId = q.id,
+                selectedOptionId = selectedOptionId
+            )
+            withContext(Dispatchers.Main) {
+                when (result) {
+                    is NetworkResult.Success -> {
+                        val answer = result.data
+                        processAnswerResult(answer, selectedIndex)
+                    }
+                    is NetworkResult.Error -> {
+                        Toast.makeText(this@GameActivity, "Error en respuesta: ${result.problem.detail}", Toast.LENGTH_SHORT).show()
+                    }
+                    is NetworkResult.Exception -> {
+                        Toast.makeText(this@GameActivity, "Sin conexión al servidor", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
         }
     }
 
+    private fun processAnswerResult(answer: GameAnswer, selectedIndex: Int) {
+        if (answer.correct) {
+            showPoints(getString(R.string.points_correct_format, answer.points))
+            tone.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
+            showCorrectAnswerFeedback(selectedIndex)
+        } else {
+            showPoints(getString(R.string.points_wrong))
+            tone.startTone(ToneGenerator.TONE_CDMA_ABBR_ALERT, 200)
+            showWrongAnswerFeedback(selectedIndex, answer.correctOptionId)
+        }
+
+        binding.root.postDelayed({
+            if (answer.sessionStatus == "COMPLETED" || answer.nextQuestion == null) {
+                goToResults()
+            } else {
+                displayQuestion(answer.nextQuestion)
+            }
+        }, answerFeedbackMs)
+    }
+
     private fun onTimeUp() {
-        gameManager.addTime(questionTimeMs)
         enableAnswers(false)
         showPoints(getString(R.string.time_up))
         tone.startTone(ToneGenerator.TONE_CDMA_ABBR_ALERT, 200)
 
-        binding.root.postDelayed({
-            goNext()
-        }, 700)
-    }
-
-    private fun goNext() {
-        val hasMore = gameManager.moveNext()
-        if (hasMore) {
-            showQuestion()
-        } else {
-            goToResults()
+        // Submit time up answer
+        val session = activeSession ?: return
+        val q = currentQuestion ?: return
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = gameSessionRepository.submitGameAnswer(
+                sessionId = session.id,
+                sessionQuestionId = q.id,
+                selectedOptionId = null
+            )
+            withContext(Dispatchers.Main) {
+                binding.root.postDelayed({
+                    if (result is NetworkResult.Success) {
+                        displayQuestion(result.data.nextQuestion)
+                    } else {
+                        goToResults()
+                    }
+                }, 1000)
+            }
         }
     }
 
@@ -153,12 +234,16 @@ class GameActivity : BaseActivity() {
         binding.answer4.isEnabled = enabled
     }
 
-    private fun showWrongAnswerFeedback(selectedIndex: Int) {
+    private fun showWrongAnswerFeedback(selectedIndex: Int, correctOptionId: String?) {
         val buttons = listOf(binding.answer1, binding.answer2, binding.answer3, binding.answer4)
         buttons.getOrNull(selectedIndex)?.backgroundTintList =
             ColorStateList.valueOf(getColor(R.color.answer_wrong))
-        buttons.getOrNull(currentCorrectIndex)?.backgroundTintList =
-            ColorStateList.valueOf(getColor(R.color.answer_correct))
+
+        val correctIndex = currentQuestion?.options?.indexOfFirst { it.id == correctOptionId } ?: -1
+        if (correctIndex >= 0) {
+            buttons.getOrNull(correctIndex)?.backgroundTintList =
+                ColorStateList.valueOf(getColor(R.color.answer_correct))
+        }
     }
 
     private fun showCorrectAnswerFeedback(selectedIndex: Int) {
@@ -185,6 +270,12 @@ class GameActivity : BaseActivity() {
             .setTitle(getString(R.string.exit_confirm_title))
             .setMessage(getString(R.string.exit_confirm_game_message))
             .setPositiveButton(getString(R.string.exit_confirm_yes)) { _, _ ->
+                val session = activeSession
+                if (session != null) {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        gameSessionRepository.abandonGameSession(session.id)
+                    }
+                }
                 finish()
             }
             .setNegativeButton(getString(R.string.exit_confirm_no)) { _, _ ->
@@ -200,10 +291,11 @@ class GameActivity : BaseActivity() {
     }
 
     private fun goToResults() {
+        val session = activeSession
         val intent = Intent(this, ResultActivity::class.java).apply {
-            putExtra(ResultActivity.EXTRA_SCORE, gameManager.score)
-            putExtra(ResultActivity.EXTRA_TOTAL_TIME, gameManager.totalTimeMs)
-            putExtra(ResultActivity.EXTRA_TOTAL_QUESTIONS, gameManager.totalQuestions())
+            putExtra(ResultActivity.EXTRA_SCORE, session?.score ?: 0)
+            putExtra(ResultActivity.EXTRA_TOTAL_TIME, 0)
+            putExtra(ResultActivity.EXTRA_TOTAL_QUESTIONS, session?.totalQuestions ?: 20)
             putExtra(ResultActivity.EXTRA_GAME_MODE, com.example.aprendemoslavida.utils.ScoreManager.MODE_NATURAL)
         }
         startActivity(intent)

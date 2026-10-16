@@ -1,29 +1,34 @@
 package com.example.aprendemoslavida.activities
 
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.view.MotionEvent
 import android.widget.ArrayAdapter
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import com.example.aprendemoslavida.R
+import com.example.aprendemoslavida.data.network.ApiClient
+import com.example.aprendemoslavida.data.network.NetworkResult
+import com.example.aprendemoslavida.data.repository.ProgressRepository
 import com.example.aprendemoslavida.databinding.ActivityScoresBinding
 import com.example.aprendemoslavida.utils.ScoreManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class ScoresActivity : BaseActivity() {
+
     private lateinit var binding: ActivityScoresBinding
-    private val longPressHandler = Handler(Looper.getMainLooper())
-    private var isLongPressTriggered: Boolean = false
-    private var pendingMode: String = ScoreManager.MODE_NATURAL
+    private lateinit var progressRepository: ProgressRepository
+    private lateinit var apiClient: ApiClient
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityScoresBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        apiClient = ApiClient.getInstance(this)
+        progressRepository = ProgressRepository(apiClient.progressApiService, apiClient.leaderboardApiService)
+
         val mode = intent.getStringExtra(EXTRA_SCORE_MODE) ?: ScoreManager.MODE_NATURAL
-        pendingMode = mode
         binding.scoresTitle.text = when (mode) {
             ScoreManager.MODE_MATH -> getString(R.string.scores_title_math)
             ScoreManager.MODE_ENGLISH -> getString(R.string.scores_title_english)
@@ -33,28 +38,65 @@ class ScoresActivity : BaseActivity() {
             else -> getString(R.string.scores_title_natural)
         }
 
-        loadScores(mode)
-
         binding.backButton.setOnClickListener { finish() }
 
-        binding.backButton.setOnLongClickListener {
-            isLongPressTriggered = false
-            longPressHandler.postDelayed({
-                isLongPressTriggered = true
-                showClearDialog()
-            }, 5000)
-            true
+        loadRemoteScoresAndLeaderboard(mode)
+    }
+
+    private fun loadRemoteScoresAndLeaderboard(mode: String) {
+        val childId = apiClient.tokenStorage.getActiveChildId()
+        if (childId.isNull_or_blank_custom()) {
+            loadLocalFallbackScores(mode)
+            return
         }
 
-        binding.backButton.setOnTouchListener { _, event ->
-            if (isLongPressTriggered || event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL) {
-                longPressHandler.removeCallbacksAndMessages(null)
+        CoroutineScope(Dispatchers.IO).launch {
+            val scoresResult = progressRepository.getPlayerScores(childId!!)
+            val leaderboardResult = progressRepository.getPublicLeaderboard(mode = mode)
+
+            withContext(Dispatchers.Main) {
+                val items = mutableListOf<String>()
+
+                when (scoresResult) {
+                    is NetworkResult.Success -> {
+                        val playerScores = scoresResult.data.filter { it.mode.equals(mode, ignoreCase = true) || mode == ScoreManager.MODE_NATURAL }
+                        if (playerScores.isNotEmpty()) {
+                            items.add("--- Mis Últimas Partidas ---")
+                            playerScores.take(5).forEachIndexed { index, s ->
+                                items.add("${index + 1}. ${s.score} pts (${s.correctAnswers}/${s.totalQuestions}) - ${s.playedAt.take(10)}")
+                            }
+                        }
+                    }
+                    else -> {}
+                }
+
+                when (leaderboardResult) {
+                    is NetworkResult.Success -> {
+                        val entries = leaderboardResult.data.entries
+                        if (entries.isNotEmpty()) {
+                            items.add("\n--- Ranking Público Semanal ---")
+                            entries.forEachIndexed { index, e ->
+                                items.add("${index + 1}. ${e.pseudonym} - ${e.score} pts")
+                            }
+                        }
+                    }
+                    else -> {}
+                }
+
+                if (items.isEmpty()) {
+                    loadLocalFallbackScores(mode)
+                } else {
+                    binding.scoresList.adapter = ArrayAdapter(
+                        this@ScoresActivity,
+                        android.R.layout.simple_list_item_1,
+                        items
+                    )
+                }
             }
-            false
         }
     }
 
-    private fun loadScores(mode: String) {
+    private fun loadLocalFallbackScores(mode: String) {
         val scores = ScoreManager(this).getTopScores(10, mode)
         val items = if (scores.isEmpty()) {
             listOf(getString(R.string.scores_empty))
@@ -77,20 +119,8 @@ class ScoresActivity : BaseActivity() {
         )
     }
 
-    private fun showClearDialog() {
-        val dialog = AlertDialog.Builder(this, R.style.ThemeOverlay_Aprendemos_AlertDialog)
-            .setTitle(getString(R.string.scores_clear_title))
-            .setMessage(getString(R.string.scores_clear_message))
-            .setPositiveButton(getString(R.string.scores_clear_confirm)) { _, _ ->
-                ScoreManager(this).clearScores(pendingMode)
-                loadScores(pendingMode)
-                Toast.makeText(this, getString(R.string.scores_cleared_toast), Toast.LENGTH_SHORT).show()
-            }
-            .setNegativeButton(getString(R.string.scores_clear_cancel), null)
-            .show()
-
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(getColor(R.color.primary))
-        dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(getColor(R.color.accent))
+    private fun String?.isNull_or_blank_custom(): Boolean {
+        return this == null || this.trim().isEmpty()
     }
 
     companion object {

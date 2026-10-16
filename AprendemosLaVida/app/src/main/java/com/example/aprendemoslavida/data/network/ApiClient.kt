@@ -50,6 +50,12 @@ class ApiClient private constructor(context: Context) {
     val authApiService: AuthApiService by lazy { retrofit.create(AuthApiService::class.java) }
     val accountApiService: AccountApiService by lazy { retrofit.create(AccountApiService::class.java) }
     val profileApiService: ProfileApiService by lazy { retrofit.create(ProfileApiService::class.java) }
+    val contentApiService: com.example.aprendemoslavida.data.api.ContentApiService by lazy { retrofit.create(com.example.aprendemoslavida.data.api.ContentApiService::class.java) }
+    val gameSessionApiService: com.example.aprendemoslavida.data.api.GameSessionApiService by lazy { retrofit.create(com.example.aprendemoslavida.data.api.GameSessionApiService::class.java) }
+    val storySessionApiService: com.example.aprendemoslavida.data.api.StorySessionApiService by lazy { retrofit.create(com.example.aprendemoslavida.data.api.StorySessionApiService::class.java) }
+    val progressApiService: com.example.aprendemoslavida.data.api.ProgressApiService by lazy { retrofit.create(com.example.aprendemoslavida.data.api.ProgressApiService::class.java) }
+    val leaderboardApiService: com.example.aprendemoslavida.data.api.LeaderboardApiService by lazy { retrofit.create(com.example.aprendemoslavida.data.api.LeaderboardApiService::class.java) }
+    val legacyImportApiService: com.example.aprendemoslavida.data.api.LegacyImportApiService by lazy { retrofit.create(com.example.aprendemoslavida.data.api.LegacyImportApiService::class.java) }
 
     companion object {
         @Volatile
