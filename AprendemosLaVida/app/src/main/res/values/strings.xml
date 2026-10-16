@@ -377,4 +377,49 @@
     <string name="story_trophy_8">Trofeo 8</string>
     <string name="story_trophy_9">Trofeo 9</string>
     <string name="story_trophy_10">Trofeo 10</string>
+
+    <!-- Auth & Profile strings -->
+    <string name="auth_login_title">¡Hola de nuevo!</string>
+    <string name="auth_login_subtitle">Inicia sesión con la cuenta de adulto/tutor</string>
+    <string name="auth_email_hint">Correo electrónico</string>
+    <string name="auth_password_hint">Contraseña</string>
+    <string name="auth_login_button">Iniciar Sesión</string>
+    <string name="auth_no_account">¿No tienes cuenta? Regístrate aquí</string>
+
+    <string name="auth_register_title">Crear Cuenta</string>
+    <string name="auth_register_subtitle">Registro de tutor responsable</string>
+    <string name="auth_parental_consent">Declaro que soy mayor de edad y doy mi consentimiento de tutor legal</string>
+    <string name="auth_register_button">Crear Cuenta</string>
+    <string name="auth_has_account">¿Ya tienes cuenta? Inicia sesión</string>
+
+    <string name="auth_verify_title">Verificar Correo</string>
+    <string name="auth_verify_subtitle">Introduce el código recibido en tu email</string>
+    <string name="auth_verify_code_hint">Código de verificación</string>
+    <string name="auth_verify_button">Verificar</string>
+
+    <string name="child_selector_title">¿Quién va a jugar?</string>
+    <string name="child_selector_subtitle">Selecciona el perfil infantil o gestiona tu cuenta</string>
+    <string name="child_selector_manage_button">Gestionar Perfiles (Adulto)</string>
+    <string name="child_selector_account_button">Cuenta y Privacidad</string>
+    <string name="child_selector_add_profile">Añadir Perfil Infantil</string>
+
+    <string name="guardian_dialog_title">Zona de Adultos</string>
+    <string name="guardian_dialog_message">Confirma tu contraseña de adulto para continuar</string>
+    <string name="guardian_dialog_confirm">Confirmar</string>
+
+    <string name="profile_mgmt_title">Gestión de Perfiles Infantiles</string>
+    <string name="profile_mgmt_create_title">Nuevo Perfil Infantil</string>
+    <string name="profile_mgmt_edit_title">Editar Perfil Infantil</string>
+    <string name="profile_mgmt_pseudonym_hint">Pseudónimo / Nombre</string>
+    <string name="profile_mgmt_age_hint">Edad (5-13 años)</string>
+    <string name="profile_mgmt_save">Guardar Perfil</string>
+    <string name="profile_mgmt_delete">Eliminar Perfil</string>
+    <string name="profile_mgmt_delete_confirm">¿Estás seguro de eliminar este perfil infantil?</string>
+
+    <string name="account_privacy_title">Cuenta y Privacidad</string>
+    <string name="account_privacy_email_format">Email: %1$s</string>
+    <string name="account_privacy_logout">Cerrar sesión</string>
+    <string name="account_privacy_logout_all">Cerrar sesión en todos los dispositivos</string>
+    <string name="account_privacy_delete_account">Programar borrado de cuenta</string>
+    <string name="account_privacy_delete_confirm">¿Estás seguro de programar el borrado definitivo de tu cuenta? Se cerrará la sesión inmediatamente.</string>
 </resources>

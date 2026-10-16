@@ -8,7 +8,7 @@ android {
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.example.aprendemoslavida"
+        applicationId "com.aprenfun.es"
         minSdk 26
         targetSdk 34
         versionCode 1
@@ -17,13 +17,22 @@ android {
 
     buildFeatures {
         viewBinding true
+        buildConfig true
     }
 
     buildTypes {
+        debug {
+            buildConfigField "String", "BASE_URL", "\"http://10.0.2.2:8080/api/v1/\""
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            buildConfigField "String", "BASE_URL", "\"https://api.aprenfun.es/api/v1/\""
         }
+    }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
     }
 
     compileOptions {

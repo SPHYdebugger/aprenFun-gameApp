@@ -117,6 +117,30 @@
             android:exported="false"
             android:screenOrientation="portrait" />
         <activity
+            android:name=".activities.AuthLoginActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".activities.AuthRegisterActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".activities.AuthVerifyEmailActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".activities.ChildSelectorActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".activities.ProfileManagementActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".activities.AccountPrivacyActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
             android:name=".activities.MainMenuActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
