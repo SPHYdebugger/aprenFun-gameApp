@@ -26,6 +26,7 @@ class StoryCongratulationsActivity : BaseActivity() {
 
     override fun onBackPressed() {
         goToResults()
+        super.onBackPressed()
     }
 
     private fun goToResults() {

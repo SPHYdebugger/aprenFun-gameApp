@@ -4,11 +4,14 @@ import com.example.aprendemoslavida.data.api.StorySessionApiService
 import com.example.aprendemoslavida.data.model.CreateStorySession
 import com.example.aprendemoslavida.data.model.SantiActionRequest
 import com.example.aprendemoslavida.data.model.SantiAnswerRequest
+import com.example.aprendemoslavida.data.model.GateOpenResponse
+import com.example.aprendemoslavida.data.model.SantiAnswerResponse
+import com.example.aprendemoslavida.data.model.SantiState
 import com.example.aprendemoslavida.data.model.StorySession
+import com.example.aprendemoslavida.data.model.StoryAnswerResponse
 import com.example.aprendemoslavida.data.model.SubmitStoryAnswer
 import com.example.aprendemoslavida.data.network.NetworkResult
 import com.example.aprendemoslavida.data.network.ProblemJsonParser
-import java.util.UUID
 
 class StorySessionRepository(
     private val storySessionApiService: StorySessionApiService
@@ -20,7 +23,7 @@ class StorySessionRepository(
         durationSeconds: Int,
         gateTopics: List<String>,
         locale: String = "es-ES",
-        idempotencyKey: String = UUID.randomUUID().toString()
+        idempotencyKey: String
     ): NetworkResult<StorySession> {
         return try {
             val response = storySessionApiService.createStorySession(
@@ -50,11 +53,11 @@ class StorySessionRepository(
         }
     }
 
-    suspend fun openStoryGate(sessionId: String, gateId: String): NetworkResult<Unit> {
+    suspend fun openStoryGate(sessionId: String, gateId: String): NetworkResult<GateOpenResponse> {
         return try {
             val response = storySessionApiService.openStoryGate(sessionId, gateId)
-            if (response.isSuccessful) {
-                NetworkResult.Success(Unit)
+            if (response.isSuccessful && response.body() != null) {
+                NetworkResult.Success(response.body()!!)
             } else {
                 NetworkResult.Error(ProblemJsonParser.parseProblem(response), response.code())
             }
@@ -69,16 +72,16 @@ class StorySessionRepository(
         sessionQuestionId: String,
         selectedOptionId: String? = null,
         numericAnswer: Int? = null,
-        idempotencyKey: String = UUID.randomUUID().toString()
-    ): NetworkResult<Unit> {
+        idempotencyKey: String
+    ): NetworkResult<StoryAnswerResponse> {
         return try {
             val response = storySessionApiService.submitStoryAnswer(
                 sessionId = sessionId,
                 idempotencyKey = idempotencyKey,
                 request = SubmitStoryAnswer(gateId, sessionQuestionId, selectedOptionId, numericAnswer)
             )
-            if (response.isSuccessful) {
-                NetworkResult.Success(Unit)
+            if (response.isSuccessful && response.body() != null) {
+                NetworkResult.Success(response.body()!!)
             } else {
                 NetworkResult.Error(ProblemJsonParser.parseProblem(response), response.code())
             }
@@ -100,11 +103,11 @@ class StorySessionRepository(
         }
     }
 
-    suspend fun updateSantiEncounter(sessionId: String, action: String): NetworkResult<Unit> {
+    suspend fun updateSantiEncounter(sessionId: String, action: String): NetworkResult<SantiState> {
         return try {
             val response = storySessionApiService.updateSantiEncounter(sessionId, SantiActionRequest(action))
-            if (response.isSuccessful) {
-                NetworkResult.Success(Unit)
+            if (response.isSuccessful && response.body() != null) {
+                NetworkResult.Success(response.body()!!)
             } else {
                 NetworkResult.Error(ProblemJsonParser.parseProblem(response), response.code())
             }
@@ -117,16 +120,16 @@ class StorySessionRepository(
         sessionId: String,
         sessionQuestionId: String,
         numericAnswer: Int,
-        idempotencyKey: String = UUID.randomUUID().toString()
-    ): NetworkResult<Unit> {
+        idempotencyKey: String
+    ): NetworkResult<SantiAnswerResponse> {
         return try {
             val response = storySessionApiService.submitSantiAnswer(
                 sessionId = sessionId,
                 idempotencyKey = idempotencyKey,
                 request = SantiAnswerRequest(sessionQuestionId, numericAnswer)
             )
-            if (response.isSuccessful) {
-                NetworkResult.Success(Unit)
+            if (response.isSuccessful && response.body() != null) {
+                NetworkResult.Success(response.body()!!)
             } else {
                 NetworkResult.Error(ProblemJsonParser.parseProblem(response), response.code())
             }
@@ -135,11 +138,11 @@ class StorySessionRepository(
         }
     }
 
-    suspend fun finishStorySession(sessionId: String): NetworkResult<Unit> {
+    suspend fun finishStorySession(sessionId: String): NetworkResult<StorySession> {
         return try {
             val response = storySessionApiService.finishStorySession(sessionId)
-            if (response.isSuccessful) {
-                NetworkResult.Success(Unit)
+            if (response.isSuccessful && response.body() != null) {
+                NetworkResult.Success(response.body()!!)
             } else {
                 NetworkResult.Error(ProblemJsonParser.parseProblem(response), response.code())
             }
@@ -148,11 +151,11 @@ class StorySessionRepository(
         }
     }
 
-    suspend fun abandonStorySession(sessionId: String): NetworkResult<Unit> {
+    suspend fun abandonStorySession(sessionId: String): NetworkResult<StorySession> {
         return try {
             val response = storySessionApiService.abandonStorySession(sessionId)
-            if (response.isSuccessful) {
-                NetworkResult.Success(Unit)
+            if (response.isSuccessful && response.body() != null) {
+                NetworkResult.Success(response.body()!!)
             } else {
                 NetworkResult.Error(ProblemJsonParser.parseProblem(response), response.code())
             }

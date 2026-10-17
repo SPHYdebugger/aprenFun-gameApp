@@ -31,6 +31,9 @@ class ScoreManager(private val context: Context) {
             .take(limit)
     }
 
+    /** Legacy migration view. It deliberately omits the locally stored name. */
+    fun getScoresForLegacyImport(): List<ScoreEntry> = loadScores()
+
     fun clearScores(mode: String) {
         val remaining = loadScores().filter { it.mode != mode }
         val array = JSONArray()

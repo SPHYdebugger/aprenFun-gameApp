@@ -1,1161 +1,398 @@
 package com.example.aprendemoslavida.activities
 
 import android.content.Intent
-import android.content.res.Configuration
-import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
-import android.media.MediaPlayer
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.os.SystemClock
-import android.view.Gravity
-import android.view.View
-import androidx.activity.OnBackPressedCallback
-import androidx.appcompat.app.AlertDialog
-import androidx.constraintlayout.widget.ConstraintSet
-import android.media.AudioManager
-import android.media.ToneGenerator
 import android.os.CountDownTimer
-import android.content.res.ColorStateList
+import android.text.InputType
+import android.view.View
+import android.widget.EditText
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import com.example.aprendemoslavida.R
+import com.example.aprendemoslavida.data.model.PresentedQuestion
+import com.example.aprendemoslavida.data.model.SantiAnswerResponse
+import com.example.aprendemoslavida.data.model.SantiState
+import com.example.aprendemoslavida.data.model.StoryAnswerResponse
+import com.example.aprendemoslavida.data.model.StorySession
+import com.example.aprendemoslavida.data.model.SubjectMapper
+import com.example.aprendemoslavida.data.network.ApiClient
+import com.example.aprendemoslavida.data.network.NetworkResult
+import com.example.aprendemoslavida.data.repository.StorySessionRepository
+import com.example.aprendemoslavida.data.storage.IdempotencyStorage
 import com.example.aprendemoslavida.databinding.ActivityStoryGameBinding
-import com.example.aprendemoslavida.story.StoryGameView
-import com.example.aprendemoslavida.story.StoryCastleDialogFragment
-import com.example.aprendemoslavida.story.StoryMap
-import com.example.aprendemoslavida.story.StoryProgressManager
-import com.example.aprendemoslavida.story.StoryQuestionDialogFragment
-import com.example.aprendemoslavida.story.StoryQuestionProvider
-import com.example.aprendemoslavida.story.StoryScoreManager
 import com.example.aprendemoslavida.story.StoryTopic
-import com.example.aprendemoslavida.utils.ScoreManager
 import com.example.aprendemoslavida.utils.SettingsManager
-import kotlin.random.Random
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.time.Duration
+import java.time.Instant
 
-// Hosts the Zelda-like mode and coordinates map, gates, questions and scoring.
-class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionDialogFragment.Listener, StoryCastleDialogFragment.Listener {
-    private enum class DialogueClip {
-        NONE,
-        SOFIA_1,
-        SOFIA_2,
-        SANTI_1,
-        SANTI_2
-    }
-
+/** Story gameplay backed exclusively by StorySession endpoints. */
+class StoryGameActivity : BaseActivity() {
     private lateinit var binding: ActivityStoryGameBinding
-    private lateinit var progressManager: StoryProgressManager
-    private lateinit var questionProvider: StoryQuestionProvider
-    private val storyMaps: List<StoryMap> =
-        (
-            listOf(StoryMap.createDefault()) +
-                StoryMap.createAllVariants() +
-                StoryMap.createAllCityVariants() +
-                StoryMap.createAllClassicCityVariants()
-            )
-    private val forestMapIndices: List<Int> by lazy {
-        storyMaps.indices.filter { storyMaps[it].visualTheme == StoryMap.VisualTheme.FOREST }
-    }
-    private val cityTilesetMapIndices: List<Int> by lazy {
-        storyMaps.indices.filter { storyMaps[it].visualTheme == StoryMap.VisualTheme.CITY_TILESET }
-    }
-    private val cityClassicMapIndices: List<Int> by lazy {
-        storyMaps.indices.filter { storyMaps[it].visualTheme == StoryMap.VisualTheme.CITY_CLASSIC }
-    }
-    private val scoreManager = StoryScoreManager()
-    private var countdownTimer: CountDownTimer? = null
-    private var totalTimeMs = 4 * 60 * 1000L
-    private var timeLeftMs: Long = totalTimeMs
-    private var warningShown: Boolean = false
-    private var storyTimerPausedForCastle: Boolean = false
-    private var storyPausedInBackground: Boolean = false
-    private val tone = ToneGenerator(AudioManager.STREAM_MUSIC, 80)
-    private var musicPlayer: MediaPlayer? = null
-    private val musicHandler = Handler(Looper.getMainLooper())
-    private var globalSoundEnabled: Boolean = true
-    private var storyMusicEnabled: Boolean = true
-    private var fastMusicApplied: Boolean = false
-    private var musicTargetVolume: Float = 0.55f
-    private var musicSpeedMultiplier: Float = 1.0f
-    private var musicLoopFadeOutArmed: Boolean = false
-    private var musicFadeRunnable: Runnable? = null
-    private var dialoguePlayer: MediaPlayer? = null
-
-    private val musicLoopWatcher = object : Runnable {
-        override fun run() {
-            val player = musicPlayer ?: return
-            if (!player.isPlaying) return
-            val duration = player.duration
-            val position = player.currentPosition
-            if (duration > 0) {
-                val remaining = duration - position
-                if (!musicLoopFadeOutArmed && remaining in 1..MUSIC_LOOP_FADE_MS) {
-                    musicLoopFadeOutArmed = true
-                    fadeMusicVolume(from = musicTargetVolume, to = 0f, durationMs = MUSIC_LOOP_FADE_MS)
-                }
-                // New cycle started after completion.
-                if (musicLoopFadeOutArmed && position < 120) {
-                    musicLoopFadeOutArmed = false
-                }
-            }
-            musicHandler.postDelayed(this, MUSIC_LOOP_WATCHER_INTERVAL_MS)
-        }
-    }
-
-    private var currentDialogGateId: Int? = null
-    private var gameStartMs: Long = 0L
-    private var exitingDialog: Boolean = false
-    private var gameStarted: Boolean = false
-    private var introDeclined: Boolean = false
-    private var currentMapIndex: Int = 0
-    private var sessionMapOrder: List<Int> = emptyList()
-    private var currentMapOrderPosition: Int = 0
-    private var mapStartScore: Int = 0
-    private var sessionMapCount: Int = 5
-    private var completedMapsCount: Int = 0
-    private val typewriterHandler = Handler(Looper.getMainLooper())
-    private var typewriterRunnable: Runnable? = null
-    private var typewriterFullText: String? = null
-    private var typewriterOnFinished: (() -> Unit)? = null
-    private var overlayTapAction: (() -> Unit)? = null
-    private var santiChallengeRound: Int = -1
-    private var santiEncounterDone: Boolean = false
-    private var santiEncounterActive: Boolean = false
-
-    companion object {
-        private const val SANTI_CASTLE_GATE_ID = -999
-        private const val SANTI_REWARD_POINTS = 500
-        private const val MUSIC_LOOP_FADE_MS = 220L
-        private const val MUSIC_LOOP_WATCHER_INTERVAL_MS = 70L
-    }
+    private lateinit var apiClient: ApiClient
+    private lateinit var repository: StorySessionRepository
+    private lateinit var idempotency: IdempotencyStorage
+    private var session: StorySession? = null
+    private var countdown: CountDownTimer? = null
+    private var currentGateId: String? = null
+    private var currentQuestion: PresentedQuestion? = null
+    private var actionInFlight = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityStoryGameBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        applyGameplayLayoutForOrientation(resources.configuration.orientation)
+        apiClient = ApiClient.getInstance(this)
+        repository = StorySessionRepository(apiClient.storySessionApiService)
+        idempotency = IdempotencyStorage(this)
 
-        binding.storyGameView.listener = this
-        binding.storyGameView.setQuestionBlocking(true)
-        binding.topBar.visibility = View.GONE
+        binding.storyGameView.visibility = View.GONE
+        binding.joystickView.visibility = View.GONE
         binding.mapContainer.visibility = View.GONE
         binding.controlsContainer.visibility = View.GONE
         binding.storySoundButton.visibility = View.GONE
-        globalSoundEnabled = SettingsManager.isSoundEnabled(this)
-        storyMusicEnabled = SettingsManager.isStoryMusicEnabled(this)
-        updateSoundIcon()
-        binding.storySoundButton.setOnClickListener { toggleStorySound() }
-        updateHud()
-        setupIntroFlow()
+        binding.topBar.visibility = View.VISIBLE
+        binding.introOverlay.visibility = View.VISIBLE
+        binding.introButtonsRow.visibility = View.VISIBLE
+        binding.introYesButton.text = "Empezar historia online"
+        binding.introNoButton.text = getString(R.string.story_intro_back)
+        binding.introText.text = "La historia se jugará online. Las preguntas, puertas, puntos y tiempo los decide el servidor."
+        binding.introYesButton.setOnClickListener { createStorySession() }
+        binding.introNoButton.setOnClickListener { finish() }
+        binding.introBackButton.setOnClickListener { abandonStorySession() }
+    }
 
-        binding.joystickView.listener = object : com.example.aprendemoslavida.story.VirtualJoystickView.Listener {
-            override fun onInputChanged(x: Float, y: Float) {
-                binding.storyGameView.setInputVector(x, y)
-            }
+    private fun createStorySession() {
+        if (actionInFlight) return
+        val childId = apiClient.tokenStorage.getActiveChildId()
+        if (childId.isNullOrBlank()) {
+            Toast.makeText(this, "Selecciona un perfil infantil para jugar online", Toast.LENGTH_LONG).show()
+            startActivity(Intent(this, ChildSelectorActivity::class.java))
+            finish()
+            return
         }
-
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                if (!gameStarted && binding.introOverlay.visibility == View.VISIBLE) {
-                    finish()
-                    return
+        actionInFlight = true
+        val action = "story_create_${childId}_${SettingsManager.getStoryMapCount(this)}"
+        val key = idempotency.getOrCreateKey(action)
+        val topics = SettingsManager.getStoryGateTopics(this).map(::backendTopic)
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = repository.createStorySession(
+                childProfileId = childId,
+                mapCount = SettingsManager.getStoryMapCount(this@StoryGameActivity),
+                durationSeconds = SettingsManager.getStoryGameTimeMs(this@StoryGameActivity) / 1000,
+                gateTopics = topics,
+                idempotencyKey = key
+            )
+            withContext(Dispatchers.Main) {
+                actionInFlight = false
+                when (result) {
+                    is NetworkResult.Success -> {
+                        idempotency.clearKey(action)
+                        session = result.data
+                        binding.introOverlay.visibility = View.GONE
+                        updateHud()
+                        startAuthoritativeCountdown()
+                        continueStory()
+                    }
+                    is NetworkResult.Error -> showNetworkError(result.statusCode, result.problem.detail)
+                    is NetworkResult.Exception -> showRetry("No se pudo crear la historia. Reintenta; se conservará la misma clave.")
                 }
-                showExitDialog()
             }
+        }
+    }
+
+    private fun continueStory() {
+        val current = session ?: return
+        if (current.status != "ACTIVE") {
+            showResults(current)
+            return
+        }
+        val map = current.currentMap
+        if (map == null) {
+            finishStorySession()
+            return
+        }
+        val gate = map.gates.firstOrNull { it.status != "RESOLVED" }
+        if (gate != null) {
+            currentGateId = gate.id
+            openGate(gate.id)
+            return
+        }
+        if (map.resolvedGates >= map.minimumGatesToExit) {
+            exitMap(map.id)
+            return
+        }
+        showStoryState("El mapa no tiene otra puerta disponible. Actualizando el estado…")
+        refreshSession()
+    }
+
+    private fun openGate(gateId: String) {
+        if (actionInFlight) return
+        actionInFlight = true
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = repository.openStoryGate(session?.id.orEmpty(), gateId)
+            withContext(Dispatchers.Main) {
+                actionInFlight = false
+                when (result) {
+                    is NetworkResult.Success -> {
+                        currentGateId = gateId
+                        val q = result.data.currentQuestion ?: result.data.nextQuestion
+                        if (q != null) askGateQuestion(q) else refreshSession()
+                    }
+                    is NetworkResult.Error -> showNetworkError(result.statusCode, result.problem.detail)
+                    is NetworkResult.Exception -> showRetry("No se pudo abrir la puerta. Reintenta.")
+                }
+            }
+        }
+    }
+
+    private fun askGateQuestion(question: PresentedQuestion) {
+        currentQuestion = question
+        val options = question.options.map { it.text }.toTypedArray()
+        if (options.isEmpty()) {
+            val input = EditText(this).apply {
+                inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_SIGNED
+                hint = "Respuesta"
+            }
+            AlertDialog.Builder(this).setTitle("Pregunta").setMessage(question.prompt).setView(input)
+                .setPositiveButton("Responder") { _, _ -> submitGateAnswer(numericAnswer = input.text.toString().toIntOrNull()) }
+                .setNegativeButton("Cancelar", null).show()
+            return
+        }
+        AlertDialog.Builder(this).setTitle("Puerta").setMessage(question.prompt)
+            .setSingleChoiceItems(options, -1) { dialog, which ->
+                dialog.dismiss()
+                submitGateAnswer(selectedOptionId = question.options[which].id)
+            }.setNegativeButton("Cancelar", null).show()
+    }
+
+    private fun submitGateAnswer(selectedOptionId: String? = null, numericAnswer: Int? = null) {
+        val current = session ?: return
+        val gateId = currentGateId ?: return
+        val question = currentQuestion ?: return
+        val action = "story_answer_${current.id}_${question.id}"
+        val key = idempotency.getOrCreateKey(action)
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = repository.submitStoryAnswer(current.id, gateId, question.id, selectedOptionId, numericAnswer, key)
+            withContext(Dispatchers.Main) {
+                when (result) {
+                    is NetworkResult.Success -> {
+                        idempotency.clearKey(action)
+                        showAnswer(result.data)
+                        refreshSession()
+                    }
+                    is NetworkResult.Error -> {
+                        showNetworkError(result.statusCode, result.problem.detail)
+                        askGateQuestion(question)
+                    }
+                    is NetworkResult.Exception -> {
+                        showRetry("No se pudo enviar la respuesta. Reintenta; se conservará la misma clave.")
+                        askGateQuestion(question)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showAnswer(answer: StoryAnswerResponse) {
+        val message = if (answer.correct) "Correcto: +${answer.points} puntos. Total: ${answer.totalScore}" else "Respuesta incorrecta. Total: ${answer.totalScore}"
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun offerSanti(santi: SantiState) {
+        if (!santi.availableOnCurrentMap || santi.status != "AVAILABLE") return
+        AlertDialog.Builder(this).setTitle("Reto de Santi")
+            .setMessage("¿Quieres aceptar el reto extra de ${santi.rewardPoints} puntos?")
+            .setPositiveButton("Aceptar") { _, _ -> updateSanti("ACCEPT") }
+            .setNegativeButton("No", null).show()
+    }
+
+    private fun updateSanti(action: String) {
+        val current = session ?: return
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = repository.updateSantiEncounter(current.id, action)
+            withContext(Dispatchers.Main) {
+                when (result) {
+                    is NetworkResult.Success -> if (action == "ACCEPT") {
+                        result.data.currentChallenge?.let { askSantiQuestion(it) } ?: refreshSession()
+                    } else refreshSession()
+                    is NetworkResult.Error -> showNetworkError(result.statusCode, result.problem.detail)
+                    is NetworkResult.Exception -> showRetry("No se pudo actualizar el reto de Santi.")
+                }
+            }
+        }
+    }
+
+    private fun askSantiQuestion(question: PresentedQuestion) {
+        currentQuestion = question
+        val input = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_SIGNED
+            hint = "Respuesta"
+        }
+        AlertDialog.Builder(this).setTitle("Reto de Santi").setMessage(question.prompt).setView(input)
+            .setPositiveButton("Responder") { _, _ -> submitSantiAnswer(question, input.text.toString().toIntOrNull()) }
+            .setNegativeButton("Cancelar", null).show()
+    }
+
+    private fun submitSantiAnswer(question: PresentedQuestion, answer: Int?) {
+        if (answer == null) {
+            Toast.makeText(this, "Escribe una respuesta", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val current = session ?: return
+        val action = "story_santi_answer_${current.id}_${question.id}"
+        val key = idempotency.getOrCreateKey(action)
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = repository.submitSantiAnswer(current.id, question.id, answer, key)
+            withContext(Dispatchers.Main) {
+                when (result) {
+                    is NetworkResult.Success -> {
+                        idempotency.clearKey(action)
+                        showSantiAnswer(result.data)
+                        refreshSession()
+                    }
+                    is NetworkResult.Error -> {
+                        showNetworkError(result.statusCode, result.problem.detail)
+                        askSantiQuestion(question)
+                    }
+                    is NetworkResult.Exception -> {
+                        showRetry("No se pudo enviar la respuesta de Santi. Reintenta.")
+                        askSantiQuestion(question)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showSantiAnswer(answer: SantiAnswerResponse) {
+        Toast.makeText(this, if (answer.correct) "Reto superado: +${answer.points}" else "Reto no superado", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun exitMap(mapId: String) {
+        val current = session ?: return
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = repository.exitStoryMap(current.id, mapId)
+            withContext(Dispatchers.Main) {
+                when (result) {
+                    is NetworkResult.Success -> { session = result.data; updateHud(); continueStory() }
+                    is NetworkResult.Error -> showNetworkError(result.statusCode, result.problem.detail)
+                    is NetworkResult.Exception -> showRetry("No se pudo salir del mapa. Reintenta.")
+                }
+            }
+        }
+    }
+
+    private fun refreshSession() {
+        val id = session?.id ?: return
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = repository.getStorySession(id)
+            withContext(Dispatchers.Main) {
+                when (result) {
+                    is NetworkResult.Success -> {
+                        session = result.data
+                        updateHud()
+                        result.data.santi?.let { offerSanti(it) }
+                        continueStory()
+                    }
+                    is NetworkResult.Error -> showNetworkError(result.statusCode, result.problem.detail)
+                    is NetworkResult.Exception -> showRetry("No se pudo actualizar la historia.")
+                }
+            }
+        }
+    }
+
+    private fun finishStorySession() {
+        val id = session?.id ?: return
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = repository.finishStorySession(id)
+            withContext(Dispatchers.Main) {
+                when (result) {
+                    is NetworkResult.Success -> showResults(result.data)
+                    is NetworkResult.Error -> showNetworkError(result.statusCode, result.problem.detail)
+                    is NetworkResult.Exception -> showRetry("No se pudo finalizar la historia.")
+                }
+            }
+        }
+    }
+
+    private fun abandonStorySession() {
+        val id = session?.id
+        if (id != null) CoroutineScope(Dispatchers.IO).launch { repository.abandonStorySession(id) }
+        finish()
+    }
+
+    private fun showResults(finalSession: StorySession) {
+        countdown?.cancel()
+        startActivity(Intent(this, ResultActivity::class.java).apply {
+            putExtra(ResultActivity.EXTRA_SCORE, finalSession.score)
+            putExtra(ResultActivity.EXTRA_TOTAL_TIME, finalSession.remainingTimeMs)
+            putExtra(ResultActivity.EXTRA_TOTAL_QUESTIONS, finalSession.completedMaps)
+            putExtra(ResultActivity.EXTRA_GAME_MODE, SubjectMapper.CODE_STORY)
+            putExtra(ResultActivity.EXTRA_SESSION_ID, finalSession.id)
         })
-    }
-
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        applyGameplayLayoutForOrientation(newConfig.orientation)
-    }
-
-    private fun applyGameplayLayoutForOrientation(orientation: Int) {
-        val set = ConstraintSet()
-        set.clone(binding.root)
-        val margin = dp(12)
-
-        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            set.constrainWidth(binding.mapContainer.id, 0)
-            set.constrainHeight(binding.mapContainer.id, 0)
-            set.clear(binding.mapContainer.id, ConstraintSet.TOP)
-            set.clear(binding.mapContainer.id, ConstraintSet.START)
-            set.clear(binding.mapContainer.id, ConstraintSet.END)
-            set.clear(binding.mapContainer.id, ConstraintSet.BOTTOM)
-            set.connect(binding.mapContainer.id, ConstraintSet.TOP, binding.topBar.id, ConstraintSet.BOTTOM, margin)
-            set.connect(binding.mapContainer.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START, margin)
-            set.connect(binding.mapContainer.id, ConstraintSet.END, binding.controlsContainer.id, ConstraintSet.START, margin)
-            set.connect(binding.mapContainer.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, margin)
-
-            set.constrainWidth(binding.controlsContainer.id, dp(190))
-            set.constrainHeight(binding.controlsContainer.id, dp(190))
-            set.clear(binding.controlsContainer.id, ConstraintSet.TOP)
-            set.clear(binding.controlsContainer.id, ConstraintSet.START)
-            set.clear(binding.controlsContainer.id, ConstraintSet.END)
-            set.clear(binding.controlsContainer.id, ConstraintSet.BOTTOM)
-            set.connect(binding.controlsContainer.id, ConstraintSet.TOP, binding.topBar.id, ConstraintSet.BOTTOM, dp(30))
-            set.connect(binding.controlsContainer.id, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END, dp(20))
-
-            set.clear(binding.storySoundButton.id, ConstraintSet.TOP)
-            set.clear(binding.storySoundButton.id, ConstraintSet.START)
-            set.clear(binding.storySoundButton.id, ConstraintSet.END)
-            set.clear(binding.storySoundButton.id, ConstraintSet.BOTTOM)
-            set.connect(binding.storySoundButton.id, ConstraintSet.TOP, binding.controlsContainer.id, ConstraintSet.BOTTOM, dp(14))
-            set.connect(binding.storySoundButton.id, ConstraintSet.START, binding.controlsContainer.id, ConstraintSet.START, 0)
-            set.connect(binding.storySoundButton.id, ConstraintSet.END, binding.controlsContainer.id, ConstraintSet.END, 0)
-        } else {
-            set.constrainWidth(binding.mapContainer.id, 0)
-            set.constrainHeight(binding.mapContainer.id, 0)
-            set.clear(binding.mapContainer.id, ConstraintSet.TOP)
-            set.clear(binding.mapContainer.id, ConstraintSet.START)
-            set.clear(binding.mapContainer.id, ConstraintSet.END)
-            set.clear(binding.mapContainer.id, ConstraintSet.BOTTOM)
-            set.connect(binding.mapContainer.id, ConstraintSet.TOP, binding.topBar.id, ConstraintSet.BOTTOM, margin)
-            set.connect(binding.mapContainer.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START, margin)
-            set.connect(binding.mapContainer.id, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END, margin)
-            set.connect(binding.mapContainer.id, ConstraintSet.BOTTOM, binding.controlsContainer.id, ConstraintSet.TOP, margin)
-
-            set.constrainWidth(binding.controlsContainer.id, dp(190))
-            set.constrainHeight(binding.controlsContainer.id, dp(190))
-            set.clear(binding.controlsContainer.id, ConstraintSet.TOP)
-            set.clear(binding.controlsContainer.id, ConstraintSet.START)
-            set.clear(binding.controlsContainer.id, ConstraintSet.END)
-            set.clear(binding.controlsContainer.id, ConstraintSet.BOTTOM)
-            set.connect(binding.controlsContainer.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, dp(16))
-            set.connect(binding.controlsContainer.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START, 0)
-            set.connect(binding.controlsContainer.id, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END, 0)
-
-            set.clear(binding.storySoundButton.id, ConstraintSet.TOP)
-            set.clear(binding.storySoundButton.id, ConstraintSet.START)
-            set.clear(binding.storySoundButton.id, ConstraintSet.END)
-            set.clear(binding.storySoundButton.id, ConstraintSet.BOTTOM)
-            set.connect(binding.storySoundButton.id, ConstraintSet.TOP, binding.mapContainer.id, ConstraintSet.BOTTOM, dp(6))
-            set.connect(binding.storySoundButton.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START, dp(20))
-        }
-
-        set.applyTo(binding.root)
-    }
-
-    override fun onGateBlocked(gateId: Int) {
-        if (!gameStarted) return
-        if (santiEncounterActive) return
-        if (currentDialogGateId != null || exitingDialog) return
-
-        currentDialogGateId = gateId
-        progressManager.startTimerIfNeeded(gateId)
-        binding.storyGameView.setQuestionBlocking(true)
-        binding.joystickView.resetStick()
-        val gateTopic = progressManager.getGate(gateId)?.topic
-        if (gateTopic == StoryTopic.CASTLES) {
-            pauseStoryTimerForCastle()
-            showCastleDialog(gateId)
-        } else {
-            showQuestionDialog(gateId)
-        }
-    }
-
-    override fun onExitReached() {
-        if (!gameStarted) return
-        if (santiEncounterActive) return
-        if (progressManager.unlockedGateCount() < 5) {
-            showStoryToast(getString(R.string.story_need_min_trophies))
-            return
-        }
-
-        countdownTimer?.cancel()
-        showWorldSummaryDialog(timeUp = false)
-    }
-
-    override fun onSantiNpcReached() {
-        if (!gameStarted) return
-        if (santiEncounterDone || santiEncounterActive) return
-        if (currentDialogGateId != null || exitingDialog) return
-
-        santiEncounterActive = true
-        santiEncounterDone = true
-        binding.storyGameView.setSantiNpcTile(null)
-        binding.storyGameView.setQuestionBlocking(true)
-        binding.joystickView.resetStick()
-        pauseStoryTimerForCastle()
-        showSantiOfferOverlay()
-    }
-
-    override fun onStoryQuestionAnswered(gateId: Int, selectedIndex: Int) {
-        if (!gameStarted) return
-        val question = progressManager.getOrCreateQuestion(gateId)
-        if (selectedIndex == question.correctIndex) {
-            val elapsedMs = progressManager.elapsedForGate(gateId)
-            val gained = scoreManager.onCorrectAnswer(elapsedMs)
-            progressManager.unlockGate(gateId)
-            binding.storyGameView.setGates(progressManager.gates)
-            showStoryToast(getString(R.string.story_correct_points_format, gained))
-            closeQuestionState()
-        } else {
-            scoreManager.onWrongAttempt()
-            showStoryToast(getString(R.string.story_wrong_penalty))
-            // Keep the same question and keep the gate timer running.
-            binding.root.postDelayed({ showQuestionDialog(gateId) }, 120L)
-        }
-        updateHud()
-    }
-
-    override fun onStoryCastleResolved(gateId: Int, points: Int) {
-        if (!gameStarted) return
-        if (gateId == SANTI_CASTLE_GATE_ID) {
-            scoreManager.addPoints(SANTI_REWARD_POINTS)
-            updateHud()
-            showSantiClosingOverlay(
-                getString(R.string.story_santi_success_text),
-                getString(R.string.story_santi_success_toast)
-            )
-            return
-        }
-        progressManager.unlockGate(gateId)
-        binding.storyGameView.setGates(progressManager.gates)
-        scoreManager.addPoints(points)
-        showStoryToast(getString(R.string.story_castle_correct_points_format, points))
-        closeQuestionState()
-        resumeStoryTimerAfterCastle()
-        updateHud()
-    }
-
-    override fun onStoryCastleFailed(gateId: Int) {
-        if (!gameStarted) return
-        if (gateId == SANTI_CASTLE_GATE_ID) {
-            showSantiClosingOverlay(
-                getString(R.string.story_santi_fail_text),
-                getString(R.string.story_santi_fail_toast)
-            )
-            return
-        }
-        progressManager.unlockGate(gateId)
-        binding.storyGameView.setGates(progressManager.gates)
-        closeQuestionState()
-        resumeStoryTimerAfterCastle()
-        updateHud()
-    }
-
-    private fun showQuestionDialog(gateId: Int) {
-        if (!gameStarted) return
-        if (supportFragmentManager.findFragmentByTag(StoryQuestionDialogFragment.TAG) != null) return
-        val dialog = StoryQuestionDialogFragment.newInstance(gateId, progressManager.getOrCreateQuestion(gateId))
-        dialog.show(supportFragmentManager, StoryQuestionDialogFragment.TAG)
-    }
-
-    private fun showCastleDialog(gateId: Int) {
-        if (!gameStarted) return
-        if (supportFragmentManager.findFragmentByTag(StoryCastleDialogFragment.TAG) != null) return
-        val title = if (gateId == SANTI_CASTLE_GATE_ID) {
-            getString(R.string.story_santi_challenge_title)
-        } else {
-            null
-        }
-        val dialog = StoryCastleDialogFragment.newInstance(gateId, title)
-        dialog.show(supportFragmentManager, StoryCastleDialogFragment.TAG)
-    }
-
-    private fun showSantiOfferOverlay() {
-        overlayTapAction = null
-        binding.introOverlay.visibility = View.VISIBLE
-        binding.introButtonsRow.visibility = View.GONE
-        binding.introBackButton.visibility = View.GONE
-        binding.introCharacter.setImageResource(R.drawable.story_player2_front)
-        startTypewriter(getString(R.string.story_santi_offer_text), clip = DialogueClip.SANTI_1) {
-            if (santiEncounterActive) {
-                binding.introButtonsRow.visibility = View.VISIBLE
-            }
-        }
-    }
-
-    private fun showSantiClosingOverlay(text: String, toastMessage: String) {
-        overlayTapAction = {
-            overlayTapAction = null
-            binding.introOverlay.visibility = View.GONE
-            showStoryToast(toastMessage)
-            finishSantiEncounter()
-        }
-        binding.introOverlay.visibility = View.VISIBLE
-        binding.introButtonsRow.visibility = View.GONE
-        binding.introBackButton.visibility = View.GONE
-        binding.introCharacter.setImageResource(R.drawable.story_player2_front)
-        startTypewriter(text, clip = DialogueClip.SANTI_2)
-    }
-
-    private fun finishSantiEncounter() {
-        santiEncounterActive = false
-        binding.joystickView.resetStick()
-        binding.storyGameView.setQuestionBlocking(false)
-        resumeStoryTimerAfterCastle()
-        updateHud()
-    }
-
-    private fun closeQuestionState() {
-        currentDialogGateId = null
-        exitingDialog = false
-        binding.joystickView.resetStick()
-        binding.storyGameView.setQuestionBlocking(false)
+        finish()
     }
 
     private fun updateHud() {
-        binding.scoreText.text = getString(R.string.story_score_format, scoreManager.score)
-        binding.timeText.text = formatTime(timeLeftMs)
-        val total = if (::progressManager.isInitialized) progressManager.gates.size else 10
-        val unlocked = if (::progressManager.isInitialized) progressManager.unlockedGateCount() else 0
-        binding.trophyCountText.text = getString(R.string.story_trophy_progress_format, unlocked, total)
+        val current = session ?: return
+        binding.scoreText.text = "Puntos: ${current.score}"
+        binding.trophyCountText.text = "Mapas: ${current.completedMaps}/${current.mapCount}"
+        binding.timeText.text = formatTime(current.remainingTimeMs)
     }
 
-    private fun showExitDialog() {
-        if (exitingDialog) return
-        exitingDialog = true
-        binding.storyGameView.setQuestionBlocking(true)
-        val dialog = AlertDialog.Builder(this, R.style.ThemeOverlay_Aprendemos_AlertDialog)
-            .setTitle(getString(R.string.exit_confirm_title))
-            .setMessage(getString(R.string.exit_confirm_game_message))
-            .setPositiveButton(getString(R.string.exit_confirm_yes)) { _, _ ->
-                countdownTimer?.cancel()
-                binding.joystickView.resetStick()
-                showWorldSummaryDialog(
-                    timeUp = false,
-                    forceFinishOnOk = true,
-                    titleOverride = getString(R.string.story_exit_summary_title)
-                )
-            }
-            .setNegativeButton(getString(R.string.exit_confirm_no)) { _, _ ->
-                exitingDialog = false
-                if (currentDialogGateId == null) {
-                    binding.storyGameView.setQuestionBlocking(false)
-                }
-            }
-            .setCancelable(false)
-            .show()
-
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(getColor(R.color.primary))
-        dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(getColor(R.color.accent))
+    private fun showStoryState(message: String) {
+        binding.introOverlay.visibility = View.VISIBLE
+        binding.introButtonsRow.visibility = View.VISIBLE
+        binding.introYesButton.text = "Continuar"
+        binding.introNoButton.text = "Abandonar"
+        binding.introText.text = message
+        binding.introYesButton.setOnClickListener { continueStory() }
+        binding.introNoButton.setOnClickListener { abandonStorySession() }
     }
 
-    private fun goToResults(finalScore: Int = scoreManager.score) {
-        val streakBonus = SettingsManager.registerStoryCompletedSession(this)
-        val scoreWithStreak = finalScore + streakBonus
-        val totalTime = (SystemClock.elapsedRealtime() - gameStartMs).toInt()
-        val intent = Intent(this, ResultActivity::class.java).apply {
-            putExtra(ResultActivity.EXTRA_SCORE, scoreWithStreak)
-            putExtra(ResultActivity.EXTRA_TOTAL_TIME, totalTime)
-            putExtra(ResultActivity.EXTRA_TOTAL_QUESTIONS, if (gameStarted) sessionMapCount * 10 else 0)
-            putExtra(ResultActivity.EXTRA_GAME_MODE, ScoreManager.MODE_STORY)
-        }
-        startActivity(intent)
-        finish()
-    }
-
-    private fun showWorldSummaryDialog(
-        timeUp: Boolean,
-        forceFinishOnOk: Boolean = false,
-        titleOverride: String? = null
-    ) {
-        val worldScore = (scoreManager.score - mapStartScore).coerceAtLeast(0)
-        val completedWorlds = when {
-            timeUp -> completedMapsCount
-            forceFinishOnOk -> completedMapsCount
-            else -> completedMapsCount + 1
-        }.coerceIn(0, sessionMapCount)
-        val summaryView = buildWorldSummaryView(worldScore, completedWorlds)
-        val title = titleOverride ?: if (timeUp) {
-            getString(R.string.story_time_up_uppercase)
-        } else {
-            getString(R.string.story_completed)
-        }
-
-        val dialog = AlertDialog.Builder(this, R.style.ThemeOverlay_Aprendemos_AlertDialog)
-            .setTitle(title)
-            .setView(summaryView)
-            .setPositiveButton(getString(R.string.ok_button)) { _, _ ->
-                onSummaryAccepted(timeUp = timeUp, forceFinishOnOk = forceFinishOnOk)
-            }
-            .setCancelable(false)
-            .show()
-
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(getColor(R.color.primary))
-    }
-
-    private fun onSummaryAccepted(timeUp: Boolean, forceFinishOnOk: Boolean) {
-        if (timeUp || forceFinishOnOk) {
-            stopMusic()
-            goToResults()
-            return
-        }
-
-        completedMapsCount += 1
-        val hasNextMap = completedMapsCount < sessionMapCount
-        val hasTimeLeft = timeLeftMs > 0L
-        if (!hasNextMap || !hasTimeLeft) {
-            stopMusic()
-            if (!hasNextMap && hasTimeLeft) {
-                goToFinalCelebration()
-            } else {
-                goToResults()
-            }
-            return
-        }
-
-        currentMapIndex = nextMapIndex()
-        loadMap(currentMapIndex)
-        startCountdown()
-    }
-
-    private fun goToFinalCelebration() {
-        val streakBonus = SettingsManager.registerStoryCompletedSession(this)
-        val scoreWithStreak = scoreManager.score + streakBonus
-        val totalTime = (SystemClock.elapsedRealtime() - gameStartMs).toInt()
-        val intent = Intent(this, StoryCongratulationsActivity::class.java).apply {
-            putExtra(ResultActivity.EXTRA_SCORE, scoreWithStreak)
-            putExtra(ResultActivity.EXTRA_TOTAL_TIME, totalTime)
-            putExtra(ResultActivity.EXTRA_TOTAL_QUESTIONS, sessionMapCount * 10)
-            putExtra(ResultActivity.EXTRA_GAME_MODE, ScoreManager.MODE_STORY)
-        }
-        startActivity(intent)
-        finish()
-    }
-
-    private val hideStoryToastRunnable = Runnable {
-        binding.storyToast.animate().alpha(0f).setDuration(200).withEndAction {
-            binding.storyToast.visibility = View.GONE
+    private fun startAuthoritativeCountdown() {
+        countdown?.cancel()
+        val remaining = session?.remainingTimeMs ?: 0L
+        countdown = object : CountDownTimer(remaining.coerceAtLeast(1L), 1000L) {
+            override fun onTick(ms: Long) { binding.timeText.text = formatTime(ms) }
+            override fun onFinish() { binding.timeText.text = formatTime(0); finishStorySession() }
         }.start()
-    }
-
-    private fun showStoryToast(message: String) {
-        binding.storyToast.text = message
-        binding.storyToast.visibility = View.VISIBLE
-        binding.storyToast.alpha = 0f
-        binding.storyToast.animate().alpha(1f).setDuration(150).start()
-        binding.storyToast.removeCallbacks(hideStoryToastRunnable)
-        binding.storyToast.postDelayed(hideStoryToastRunnable, 1400L)
-    }
-
-    private fun buildWorldSummaryView(worldScore: Int, completedWorlds: Int): android.view.View {
-        val padding = dp(16)
-        val container = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
-            setPadding(padding, padding, padding, padding)
-        }
-
-        val message = android.widget.TextView(this).apply {
-            text = getString(R.string.story_world_score_format, worldScore)
-            setTextColor(getColor(R.color.text_primary))
-        }
-
-        val totalMessage = android.widget.TextView(this).apply {
-            text = getString(R.string.story_total_score_format, scoreManager.score)
-            setTextColor(getColor(R.color.text_primary))
-            setPadding(0, dp(4), 0, 0)
-        }
-
-        val label = android.widget.TextView(this).apply {
-            text = getString(R.string.story_trophies_label)
-            setTextColor(getColor(R.color.text_primary))
-            setPadding(0, dp(12), 0, dp(8))
-        }
-
-        val size = dp(28)
-        val trophies = progressManager.gates.sortedBy { it.id }
-        val rows = listOf(
-            trophies.take(5),
-            trophies.drop(5).take(5)
-        )
-
-        container.addView(message)
-        container.addView(totalMessage)
-        container.addView(label)
-        rows.forEach { rowTrophies ->
-            val row = android.widget.LinearLayout(this).apply {
-                orientation = android.widget.LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_HORIZONTAL
-            }
-            rowTrophies.forEach { gate ->
-                val image = android.widget.ImageView(this)
-                image.setImageBitmap(buildTrophyBitmap(size, gate.unlocked))
-                if (!gate.unlocked) {
-                    image.alpha = 0.35f
-                }
-                val params = android.widget.LinearLayout.LayoutParams(size, size)
-                params.marginEnd = dp(6)
-                image.layoutParams = params
-                row.addView(image)
-            }
-            container.addView(row)
-        }
-
-        container.addView(buildProgressSection(completedWorlds))
-        return container
-    }
-
-    private fun buildProgressSection(completedWorlds: Int): android.view.View {
-        val wrapper = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
-            setPadding(0, dp(14), 0, 0)
-        }
-
-        val title = android.widget.TextView(this).apply {
-            text = getString(R.string.story_progress_title)
-            setTextColor(getColor(R.color.text_primary))
-            setPadding(0, 0, 0, dp(8))
-        }
-        wrapper.addView(title)
-
-        val row = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER
-        }
-
-        val dotSize = dp(14)
-        val lineHeight = dp(4)
-        val lineWidth = dp(36)
-        val doneColor = Color.parseColor("#33AA33")
-        val pendingColor = Color.parseColor("#E53935")
-        val safeCompleted = completedWorlds.coerceIn(0, sessionMapCount)
-
-        for (i in 0 until sessionMapCount) {
-            val dot = View(this).apply {
-                background = GradientDrawable().apply {
-                    shape = GradientDrawable.OVAL
-                    setColor(if (i < safeCompleted) doneColor else pendingColor)
-                }
-                layoutParams = android.widget.LinearLayout.LayoutParams(dotSize, dotSize)
-            }
-            row.addView(dot)
-
-            if (i < sessionMapCount - 1) {
-                val line = View(this).apply {
-                    background = GradientDrawable().apply {
-                        shape = GradientDrawable.RECTANGLE
-                        cornerRadius = lineHeight / 2f
-                        setColor(if (i < safeCompleted - 1) doneColor else pendingColor)
-                    }
-                    layoutParams = android.widget.LinearLayout.LayoutParams(lineWidth, lineHeight).apply {
-                        gravity = Gravity.CENTER_VERTICAL
-                    }
-                }
-                row.addView(line)
-            }
-        }
-        wrapper.addView(row)
-        return wrapper
-    }
-
-    private fun buildTrophyBitmap(sizePx: Int, colored: Boolean): android.graphics.Bitmap {
-        val bitmap = android.graphics.Bitmap.createBitmap(sizePx, sizePx, android.graphics.Bitmap.Config.ARGB_8888)
-        val canvas = android.graphics.Canvas(bitmap)
-        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
-        val gold = if (colored) android.graphics.Color.parseColor("#F2C94C") else android.graphics.Color.parseColor("#B0B0B0")
-        val darkGold = if (colored) android.graphics.Color.parseColor("#C9A33A") else android.graphics.Color.parseColor("#8F8F8F")
-        val base = if (colored) android.graphics.Color.parseColor("#8C6B2A") else android.graphics.Color.parseColor("#7A7A7A")
-
-        paint.color = gold
-        canvas.drawRect(
-            sizePx * 0.28f,
-            sizePx * 0.2f,
-            sizePx * 0.72f,
-            sizePx * 0.55f,
-            paint
-        )
-        canvas.drawOval(
-            sizePx * 0.18f,
-            sizePx * 0.25f,
-            sizePx * 0.35f,
-            sizePx * 0.45f,
-            paint
-        )
-        canvas.drawOval(
-            sizePx * 0.65f,
-            sizePx * 0.25f,
-            sizePx * 0.82f,
-            sizePx * 0.45f,
-            paint
-        )
-
-        paint.color = darkGold
-        canvas.drawRect(
-            sizePx * 0.45f,
-            sizePx * 0.55f,
-            sizePx * 0.55f,
-            sizePx * 0.7f,
-            paint
-        )
-
-        paint.color = base
-        canvas.drawRect(
-            sizePx * 0.3f,
-            sizePx * 0.72f,
-            sizePx * 0.7f,
-            sizePx * 0.85f,
-            paint
-        )
-
-        return bitmap
-    }
-
-    private fun dp(value: Int): Int {
-        return (value * resources.displayMetrics.density).toInt()
     }
 
     private fun formatTime(ms: Long): String {
-        val totalSeconds = (ms / 1000L).toInt().coerceAtLeast(0)
-        val minutes = totalSeconds / 60
-        val seconds = totalSeconds % 60
-        return getString(R.string.story_time_format, minutes, seconds)
+        val seconds = (ms / 1000L).coerceAtLeast(0L)
+        return getString(R.string.story_time_format, (seconds / 60).toInt(), (seconds % 60).toInt())
     }
 
-    private fun startCountdown() {
-        countdownTimer?.cancel()
-        if (timeLeftMs <= 0L) {
-            onTimeUp()
-            return
+    private fun backendTopic(topic: StoryTopic): String = when (topic) {
+        StoryTopic.NATURAL -> SubjectMapper.CODE_NATURAL
+        StoryTopic.MATH_MULTIPLICATION -> SubjectMapper.TOPIC_MULTIPLICATION
+        StoryTopic.MATH_ADD_SUB -> SubjectMapper.TOPIC_ADD_SUB
+        StoryTopic.ENGLISH -> SubjectMapper.CODE_ENGLISH
+        StoryTopic.SOCIAL -> SubjectMapper.CODE_SOCIAL
+        StoryTopic.LANGUAGE -> SubjectMapper.CODE_LANGUAGE
+        StoryTopic.CASTLES -> SubjectMapper.TOPIC_CASTLES
+    }
+
+    private fun showRetry(message: String) = Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+
+    private fun showNetworkError(status: Int, detail: String?) {
+        val message = when (status) {
+            401 -> "La sesión ha caducado. Vuelve a iniciar sesión."
+            403 -> "No tienes permiso para esta acción."
+            409 -> "La historia cambió en el servidor. Se volverá a consultar."
+            429 -> "Demasiadas solicitudes. Espera y reintenta."
+            in 500..599 -> "El servidor no está disponible. Reintenta."
+            else -> detail ?: "Error del servidor ($status)."
         }
-        updateHud()
-
-        countdownTimer = object : CountDownTimer(timeLeftMs, 1000L) {
-            override fun onTick(millisUntilFinished: Long) {
-                timeLeftMs = millisUntilFinished
-                if (!warningShown && timeLeftMs <= 60_000L) {
-                    warningShown = true
-                    if (globalSoundEnabled) {
-                        tone.startTone(ToneGenerator.TONE_PROP_BEEP, 300)
-                    }
-                    showStoryToast(getString(R.string.story_time_warning))
-                    setMusicSpeed(multiplier = 1.25f)
-                }
-                if (timeLeftMs <= 60_000L) {
-                    val seconds = (timeLeftMs / 1000L).toInt()
-                    val color = if (seconds % 2 == 0) {
-                        getColor(R.color.time_warning)
-                    } else {
-                        getColor(R.color.text_primary)
-                    }
-                    binding.timeText.setTextColor(color)
-                } else {
-                    binding.timeText.setTextColor(getColor(R.color.text_primary))
-                }
-                updateHud()
-            }
-
-            override fun onFinish() {
-                timeLeftMs = 0L
-                binding.timeText.setTextColor(getColor(R.color.text_primary))
-                updateHud()
-                onTimeUp()
-            }
-        }.start()
-    }
-
-    private fun pauseStoryTimerForCastle() {
-        if (storyTimerPausedForCastle) return
-        countdownTimer?.cancel()
-        storyTimerPausedForCastle = true
-    }
-
-    private fun resumeStoryTimerAfterCastle() {
-        if (!storyTimerPausedForCastle) return
-        storyTimerPausedForCastle = false
-        if (gameStarted && timeLeftMs > 0L && !exitingDialog && currentDialogGateId == null) {
-            startCountdown()
-        }
-    }
-
-    private fun onTimeUp() {
-        if (!gameStarted) return
-        binding.storyGameView.setQuestionBlocking(true)
-        binding.joystickView.resetStick()
-        countdownTimer?.cancel()
-        timeLeftMs = 0L
-        binding.timeText.setTextColor(getColor(R.color.text_primary))
-        updateHud()
-        showWorldSummaryDialog(timeUp = true)
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
 
     override fun onDestroy() {
-        countdownTimer?.cancel()
-        cancelTypewriter()
-        stopMusicLoopWatcher()
-        cancelMusicFade()
-        stopMusic()
-        stopDialogueAudio()
-        tone.release()
+        countdown?.cancel()
         super.onDestroy()
     }
-
-    override fun onPause() {
-        super.onPause()
-        if (gameStarted && !storyPausedInBackground) {
-            storyPausedInBackground = true
-            countdownTimer?.cancel()
-            binding.joystickView.resetStick()
-            binding.storyGameView.setQuestionBlocking(true)
-        }
-        stopMusicLoopWatcher()
-        cancelMusicFade()
-        musicPlayer?.pause()
-        stopDialogueAudio()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        if (gameStarted && storyPausedInBackground) {
-            storyPausedInBackground = false
-            val canResumeGameplayInput =
-                !exitingDialog &&
-                    currentDialogGateId == null &&
-                    !santiEncounterActive &&
-                    binding.introOverlay.visibility != View.VISIBLE
-            binding.storyGameView.setQuestionBlocking(!canResumeGameplayInput)
-            if (!storyTimerPausedForCastle && timeLeftMs > 0L && !exitingDialog && currentDialogGateId == null && !santiEncounterActive) {
-                startCountdown()
-            } else {
-                updateHud()
-            }
-        }
-        globalSoundEnabled = SettingsManager.isSoundEnabled(this)
-        storyMusicEnabled = SettingsManager.isStoryMusicEnabled(this)
-        updateSoundIcon()
-        if (gameStarted && canPlayStoryMusic()) {
-            try {
-                musicPlayer?.start()
-            } catch (_: IllegalStateException) {
-                startMusicIfNeeded()
-            }
-        } else {
-            stopMusic()
-        }
-    }
-
-    private fun setupIntroFlow() {
-        binding.introOverlay.visibility = View.VISIBLE
-        binding.introButtonsRow.visibility = View.GONE
-        binding.introBackButton.visibility = View.GONE
-        binding.introText.text = ""
-        binding.introOverlay.setOnClickListener {
-            if (typewriterRunnable != null) {
-                completeTypewriterImmediately()
-                return@setOnClickListener
-            }
-            overlayTapAction?.invoke()
-        }
-        binding.introBackButton.setOnClickListener { goToMainMenu() }
-        binding.introYesButton.setOnClickListener {
-            if (santiEncounterActive) {
-                binding.introButtonsRow.visibility = View.GONE
-                binding.introOverlay.visibility = View.GONE
-                showCastleDialog(SANTI_CASTLE_GATE_ID)
-                return@setOnClickListener
-            }
-            if (gameStarted) return@setOnClickListener
-            cancelTypewriter()
-            binding.introOverlay.visibility = View.GONE
-            startStoryGame()
-        }
-        binding.introNoButton.setOnClickListener {
-            if (santiEncounterActive) {
-                binding.introButtonsRow.visibility = View.GONE
-                showSantiClosingOverlay(
-                    getString(R.string.story_santi_decline_text),
-                    getString(R.string.story_santi_decline_toast)
-                )
-                return@setOnClickListener
-            }
-            if (introDeclined) return@setOnClickListener
-            introDeclined = true
-            binding.introButtonsRow.visibility = View.GONE
-            binding.introBackButton.visibility = View.GONE
-            startTypewriter(getString(R.string.story_intro_no_text), clip = DialogueClip.SOFIA_2) {
-                binding.introBackButton.visibility = View.VISIBLE
-            }
-        }
-        startTypewriter(getString(R.string.story_intro_text), clip = DialogueClip.SOFIA_1) {
-            if (!introDeclined) {
-                binding.introButtonsRow.visibility = View.VISIBLE
-            }
-        }
-    }
-
-    private fun startStoryGame() {
-        gameStarted = true
-        completedMapsCount = 0
-        sessionMapCount = SettingsManager.getStoryMapCount(this).coerceIn(3, 5)
-        sessionMapOrder = buildSessionMapOrder(sessionMapCount)
-        currentMapOrderPosition = 0
-        currentMapIndex = sessionMapOrder.firstOrNull() ?: 0
-        santiChallengeRound = Random.nextInt(sessionMapCount)
-        santiEncounterDone = false
-        santiEncounterActive = false
-        overlayTapAction = null
-        totalTimeMs = SettingsManager.getStoryGameTimeMs(this).toLong()
-        timeLeftMs = totalTimeMs
-        warningShown = false
-        questionProvider = StoryQuestionProvider(this)
-        gameStartMs = SystemClock.elapsedRealtime()
-        scoreManager.reset()
-        loadMap(currentMapIndex)
-        binding.topBar.visibility = View.VISIBLE
-        binding.mapContainer.visibility = View.VISIBLE
-        binding.controlsContainer.visibility = View.VISIBLE
-        binding.storySoundButton.visibility = View.VISIBLE
-        binding.timeText.setTextColor(getColor(R.color.text_primary))
-        updateHud()
-        startMusicIfNeeded()
-        startCountdown()
-    }
-
-    private fun nextMapIndex(): Int {
-        val nextPos = currentMapOrderPosition + 1
-        if (nextPos < sessionMapOrder.size) {
-            currentMapOrderPosition = nextPos
-            return sessionMapOrder[nextPos]
-        }
-        return currentMapIndex
-    }
-
-    private fun buildSessionMapOrder(mapCount: Int): List<Int> {
-        if (mapCount == 3 &&
-            forestMapIndices.isNotEmpty() &&
-            cityTilesetMapIndices.isNotEmpty() &&
-            cityClassicMapIndices.isNotEmpty()
-        ) {
-            return listOf(
-                forestMapIndices.random(),
-                cityTilesetMapIndices.random(),
-                cityClassicMapIndices.random()
-            ).shuffled()
-        }
-
-        return storyMaps.indices.shuffled().take(mapCount.coerceAtMost(storyMaps.size))
-    }
-
-    private fun toggleStorySound() {
-        storyMusicEnabled = !storyMusicEnabled
-        SettingsManager.setStoryMusicEnabled(this, storyMusicEnabled)
-        updateSoundIcon()
-        if (canPlayStoryMusic()) {
-            startMusicIfNeeded()
-        } else {
-            stopMusic()
-        }
-    }
-
-    private fun updateSoundIcon() {
-        val icon = if (canPlayStoryMusic()) {
-            android.R.drawable.ic_lock_silent_mode_off
-        } else {
-            android.R.drawable.ic_lock_silent_mode
-        }
-        binding.storySoundButton.setImageResource(icon)
-        binding.storySoundButton.imageTintList = ColorStateList.valueOf(getColor(R.color.text_primary))
-        binding.storySoundButton.contentDescription =
-            getString(if (canPlayStoryMusic()) R.string.sound_toggle_on else R.string.sound_toggle_off)
-    }
-
-    private fun startMusicIfNeeded() {
-        if (!canPlayStoryMusic() || !gameStarted) return
-        if (musicPlayer == null) {
-            musicPlayer = MediaPlayer.create(this, R.raw.story_music)?.apply {
-                isLooping = false
-                setVolume(musicTargetVolume, musicTargetVolume)
-                setOnCompletionListener { player ->
-                    musicLoopFadeOutArmed = false
-                    player.seekTo(0)
-                    player.setVolume(0f, 0f)
-                    player.start()
-                    setMusicSpeed(musicSpeedMultiplier)
-                    fadeMusicVolume(from = 0f, to = musicTargetVolume, durationMs = MUSIC_LOOP_FADE_MS)
-                }
-            }
-        }
-        val player = musicPlayer ?: return
-        setMusicSpeed(if (warningShown) 1.25f else 1.0f)
-        if (!player.isPlaying) {
-            player.start()
-        }
-        player.setVolume(musicTargetVolume, musicTargetVolume)
-        musicLoopFadeOutArmed = false
-        startMusicLoopWatcher()
-    }
-
-    private fun stopMusic() {
-        stopMusicLoopWatcher()
-        cancelMusicFade()
-        musicPlayer?.stop()
-        musicPlayer?.release()
-        musicPlayer = null
-        fastMusicApplied = false
-        musicSpeedMultiplier = 1.0f
-        musicLoopFadeOutArmed = false
-    }
-
-    private fun setMusicSpeed(multiplier: Float) {
-        musicSpeedMultiplier = multiplier
-        if (fastMusicApplied && multiplier > 1f) return
-        fastMusicApplied = multiplier > 1f
-        val player = musicPlayer ?: return
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.M) return
-        try {
-            val params = player.playbackParams ?: android.media.PlaybackParams()
-            player.playbackParams = params.setSpeed(multiplier)
-        } catch (_: Exception) {
-            // Ignore on devices where playback speed is not supported for this stream.
-        }
-    }
-
-    private fun startMusicLoopWatcher() {
-        musicHandler.removeCallbacks(musicLoopWatcher)
-        musicHandler.post(musicLoopWatcher)
-    }
-
-    private fun stopMusicLoopWatcher() {
-        musicHandler.removeCallbacks(musicLoopWatcher)
-    }
-
-    private fun cancelMusicFade() {
-        musicFadeRunnable?.let { musicHandler.removeCallbacks(it) }
-        musicFadeRunnable = null
-    }
-
-    private fun fadeMusicVolume(from: Float, to: Float, durationMs: Long) {
-        val player = musicPlayer ?: return
-        cancelMusicFade()
-        val safeDuration = durationMs.coerceAtLeast(1L)
-        val startTime = SystemClock.elapsedRealtime()
-        val runnable = object : Runnable {
-            override fun run() {
-                val elapsed = SystemClock.elapsedRealtime() - startTime
-                val t = (elapsed.toFloat() / safeDuration.toFloat()).coerceIn(0f, 1f)
-                val v = from + ((to - from) * t)
-                player.setVolume(v, v)
-                if (t < 1f && player == musicPlayer) {
-                    musicHandler.postDelayed(this, 16L)
-                } else {
-                    player.setVolume(to, to)
-                    if (musicFadeRunnable === this) {
-                        musicFadeRunnable = null
-                    }
-                }
-            }
-        }
-        musicFadeRunnable = runnable
-        musicHandler.post(runnable)
-    }
-
-    private fun loadMap(index: Int) {
-        val map = storyMaps[index]
-        map.randomizeSecretEntrance()
-        mapStartScore = scoreManager.score
-        progressManager = StoryProgressManager(
-            questionProvider,
-            map,
-            SettingsManager.getStoryGateTopics(this)
-        )
-        currentDialogGateId = null
-        exitingDialog = false
-        binding.storyGameView.setMap(map)
-        binding.storyGameView.setGates(progressManager.gates)
-        val shouldPlaceSanti = !santiEncounterDone && completedMapsCount == santiChallengeRound
-        if (shouldPlaceSanti) {
-            val santiTile = map.trophyHiddenCandidates
-                .filter { (x, y) ->
-                    map.hiddenZoneAtTile(x, y) >= 0 &&
-                        map.isWalkable(x, y) &&
-                        map.tileTypeAt(x, y) != StoryMap.TileType.TREE
-                }
-                .randomOrNull()
-            binding.storyGameView.setSantiNpcTile(santiTile)
-        } else {
-            binding.storyGameView.setSantiNpcTile(null)
-        }
-        binding.storyGameView.setQuestionBlocking(false)
-        binding.joystickView.resetStick()
-    }
-
-    private fun startTypewriter(text: String, clip: DialogueClip = DialogueClip.NONE, onFinished: (() -> Unit)? = null) {
-        cancelTypewriter()
-        binding.introText.text = ""
-        typewriterFullText = text
-        typewriterOnFinished = onFinished
-        playDialogueClip(clip)
-        var index = 0
-        val runnable = object : Runnable {
-            override fun run() {
-                if (index >= text.length) {
-                    val callback = typewriterOnFinished
-                    typewriterRunnable = null
-                    typewriterFullText = null
-                    typewriterOnFinished = null
-                    callback?.invoke()
-                    return
-                }
-                index += 1
-                binding.introText.text = text.substring(0, index)
-                typewriterHandler.postDelayed(this, 52L)
-            }
-        }
-        typewriterRunnable = runnable
-        typewriterHandler.post(runnable)
-    }
-
-    private fun cancelTypewriter() {
-        typewriterRunnable?.let { typewriterHandler.removeCallbacks(it) }
-        typewriterRunnable = null
-        typewriterFullText = null
-        typewriterOnFinished = null
-        stopDialogueAudio()
-    }
-
-    private fun completeTypewriterImmediately() {
-        val fullText = typewriterFullText ?: return
-        val callback = typewriterOnFinished
-        typewriterRunnable?.let { typewriterHandler.removeCallbacks(it) }
-        typewriterRunnable = null
-        typewriterFullText = null
-        typewriterOnFinished = null
-        binding.introText.text = fullText
-        stopDialogueAudio()
-        callback?.invoke()
-    }
-
-    private fun playDialogueClip(clip: DialogueClip) {
-        stopDialogueAudio()
-        if (!globalSoundEnabled) return
-        val resId = when (clip) {
-            DialogueClip.SOFIA_1 -> R.raw.sofia1
-            DialogueClip.SOFIA_2 -> R.raw.sofia2
-            // Audio files for Santi came with inverted numbering.
-            // Keep semantic mapping: texto1 -> santi1, texto2 -> santi2.
-            DialogueClip.SANTI_1 -> R.raw.santi2
-            DialogueClip.SANTI_2 -> R.raw.santi1
-            DialogueClip.NONE -> 0
-        }
-        if (resId == 0) return
-        dialoguePlayer = MediaPlayer.create(this, resId)?.apply {
-            setVolume(1f, 1f)
-            setOnCompletionListener { player ->
-                player.release()
-                if (dialoguePlayer == player) {
-                    dialoguePlayer = null
-                }
-            }
-            start()
-        }
-    }
-
-    private fun stopDialogueAudio() {
-        dialoguePlayer?.let { player ->
-            try {
-                if (player.isPlaying) player.stop()
-            } catch (_: Exception) {
-            }
-            player.release()
-        }
-        dialoguePlayer = null
-    }
-
-    private fun goToMainMenu() {
-        startActivity(Intent(this, MainMenuActivity::class.java))
-        finish()
-    }
-
-    private fun canPlayStoryMusic(): Boolean = globalSoundEnabled && storyMusicEnabled
 }

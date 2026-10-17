@@ -48,7 +48,7 @@
                 android:layout_marginEnd="4dp"
                 android:contentDescription="@string/story_trophy_progress_cd"
                 android:src="@drawable/ic_star"
-                android:tint="@color/text_primary" />
+                app:tint="@color/text_primary" />
 
             <TextView
                 android:id="@+id/trophyCountText"
@@ -139,7 +139,7 @@
                 android:contentDescription="@string/sound_toggle_on"
                 android:padding="10dp"
                 android:src="@android:drawable/ic_lock_silent_mode_off"
-                android:tint="@color/text_primary" />
+                app:tint="@color/text_primary" />
         </LinearLayout>
     </LinearLayout>
 

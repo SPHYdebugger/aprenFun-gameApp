@@ -1,5 +1,7 @@
 # Plan de Implementación - Segundo PR: Integración Completa de Juego y Contenido Remoto
 
+> Estado corregido (2026-10-17): este documento es un plan de trabajo, no una certificación de finalización. Las marcas históricas describen DTOs, servicios o tests existentes; no prueban que las Activities estuvieran conectadas. Historia, castillos, suma/resta, sociales, lengua, importación legacy, persistencia de idempotencia y eliminación de fallbacks locales requieren verificación contra el backend local.
+
 ## 1. Visión General
 El objetivo de este **Segundo PR** es conectar completamente el motor de juego de **AprendemosLaVida** con los servicios autoritativos del backend **aprenFun_back**, sustituyendo el cómputo y banco de preguntas local por las sesiones de juego remotas, el catálogo de contenido y las puntuaciones/rankings globales.
 

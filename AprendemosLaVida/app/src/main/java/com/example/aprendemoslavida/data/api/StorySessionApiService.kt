@@ -5,6 +5,10 @@ import com.example.aprendemoslavida.data.model.SantiActionRequest
 import com.example.aprendemoslavida.data.model.SantiAnswerRequest
 import com.example.aprendemoslavida.data.model.StorySession
 import com.example.aprendemoslavida.data.model.SubmitStoryAnswer
+import com.example.aprendemoslavida.data.model.GateOpenResponse
+import com.example.aprendemoslavida.data.model.StoryAnswerResponse
+import com.example.aprendemoslavida.data.model.SantiAnswerResponse
+import com.example.aprendemoslavida.data.model.SantiState
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -29,14 +33,14 @@ interface StorySessionApiService {
     suspend fun openStoryGate(
         @Path("sessionId") sessionId: String,
         @Path("gateId") gateId: String
-    ): Response<Void>
+    ): Response<GateOpenResponse>
 
     @POST("story-sessions/{sessionId}/answers")
     suspend fun submitStoryAnswer(
         @Path("sessionId") sessionId: String,
         @Header("Idempotency-Key") idempotencyKey: String,
         @Body request: SubmitStoryAnswer
-    ): Response<Void>
+    ): Response<StoryAnswerResponse>
 
     @POST("story-sessions/{sessionId}/maps/{mapId}/exit")
     suspend fun exitStoryMap(
@@ -48,22 +52,22 @@ interface StorySessionApiService {
     suspend fun updateSantiEncounter(
         @Path("sessionId") sessionId: String,
         @Body request: SantiActionRequest
-    ): Response<Void>
+    ): Response<SantiState>
 
     @POST("story-sessions/{sessionId}/santi/answers")
     suspend fun submitSantiAnswer(
         @Path("sessionId") sessionId: String,
         @Header("Idempotency-Key") idempotencyKey: String,
         @Body request: SantiAnswerRequest
-    ): Response<Void>
+    ): Response<SantiAnswerResponse>
 
     @POST("story-sessions/{sessionId}/finish")
     suspend fun finishStorySession(
         @Path("sessionId") sessionId: String
-    ): Response<Void>
+    ): Response<StorySession>
 
     @POST("story-sessions/{sessionId}/abandon")
     suspend fun abandonStorySession(
         @Path("sessionId") sessionId: String
-    ): Response<Void>
+    ): Response<StorySession>
 }

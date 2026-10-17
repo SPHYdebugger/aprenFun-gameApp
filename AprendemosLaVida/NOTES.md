@@ -1,5 +1,7 @@
 # Cambios realizados
 
+Estado corregido: las partidas activas usan `RemoteGameActivity` y `StoryGameActivity` con APIs de sesión remota. Los gestores y bancos locales descritos abajo son legado de la aplicación y no son fuente de preguntas, respuestas, caducidad ni puntuación.
+
 ## Análisis del flujo existente (Paso 1)
 - Entrada actual de `JUGAR`: `MainMenuActivity` lanzaba `GameModeActivity` con `ACTION_PLAY`.
 - Menú de selección de asignaturas: `GameModeActivity` (`activity_game_mode.xml`).

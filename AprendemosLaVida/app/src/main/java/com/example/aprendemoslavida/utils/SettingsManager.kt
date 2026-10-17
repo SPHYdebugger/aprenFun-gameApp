@@ -212,6 +212,11 @@ object SettingsManager {
         )
     }
 
+    fun getLastCompletedStoryDay(context: Context): Int {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getInt(KEY_STORY_STREAK_LAST_COMPLETED_DAY, 0)
+    }
+
     fun consumeStoryStreakLaunch(context: Context): StoryStreakState {
         val preview = previewStoryStreak(context)
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

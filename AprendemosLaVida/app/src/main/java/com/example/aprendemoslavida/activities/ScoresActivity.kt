@@ -7,6 +7,7 @@ import com.example.aprendemoslavida.R
 import com.example.aprendemoslavida.data.network.ApiClient
 import com.example.aprendemoslavida.data.network.NetworkResult
 import com.example.aprendemoslavida.data.repository.ProgressRepository
+import com.example.aprendemoslavida.data.model.SubjectMapper
 import com.example.aprendemoslavida.databinding.ActivityScoresBinding
 import com.example.aprendemoslavida.utils.ScoreManager
 import kotlinx.coroutines.CoroutineScope
@@ -28,13 +29,14 @@ class ScoresActivity : BaseActivity() {
         apiClient = ApiClient.getInstance(this)
         progressRepository = ProgressRepository(apiClient.progressApiService, apiClient.leaderboardApiService)
 
-        val mode = intent.getStringExtra(EXTRA_SCORE_MODE) ?: ScoreManager.MODE_NATURAL
+        val localMode = intent.getStringExtra(EXTRA_SCORE_MODE) ?: ScoreManager.MODE_NATURAL
+        val mode = SubjectMapper.toBackendSubjectCode(localMode)
         binding.scoresTitle.text = when (mode) {
-            ScoreManager.MODE_MATH -> getString(R.string.scores_title_math)
-            ScoreManager.MODE_ENGLISH -> getString(R.string.scores_title_english)
-            ScoreManager.MODE_SOCIAL -> getString(R.string.scores_title_social)
-            ScoreManager.MODE_LANGUAGE -> getString(R.string.scores_title_language)
-            ScoreManager.MODE_STORY -> getString(R.string.scores_title_story)
+            SubjectMapper.CODE_MATH -> getString(R.string.scores_title_math)
+            SubjectMapper.CODE_ENGLISH -> getString(R.string.scores_title_english)
+            SubjectMapper.CODE_SOCIAL -> getString(R.string.scores_title_social)
+            SubjectMapper.CODE_LANGUAGE -> getString(R.string.scores_title_language)
+            SubjectMapper.CODE_STORY -> getString(R.string.scores_title_story)
             else -> getString(R.string.scores_title_natural)
         }
 
@@ -46,20 +48,22 @@ class ScoresActivity : BaseActivity() {
     private fun loadRemoteScoresAndLeaderboard(mode: String) {
         val childId = apiClient.tokenStorage.getActiveChildId()
         if (childId.isNull_or_blank_custom()) {
-            loadLocalFallbackScores(mode)
+            showRemoteError("Selecciona un perfil para consultar tus partidas online.")
             return
         }
 
         CoroutineScope(Dispatchers.IO).launch {
             val scoresResult = progressRepository.getPlayerScores(childId!!)
-            val leaderboardResult = progressRepository.getPublicLeaderboard(mode = mode)
+            val leaderboardResult = progressRepository.getPublicLeaderboard(mode = SubjectMapper.toBackendSubjectCode(mode))
 
             withContext(Dispatchers.Main) {
                 val items = mutableListOf<String>()
 
                 when (scoresResult) {
                     is NetworkResult.Success -> {
-                        val playerScores = scoresResult.data.filter { it.mode.equals(mode, ignoreCase = true) || mode == ScoreManager.MODE_NATURAL }
+                        val playerScores = scoresResult.data.filter {
+                            it.mode.equals(SubjectMapper.toBackendSubjectCode(mode), ignoreCase = true)
+                        }
                         if (playerScores.isNotEmpty()) {
                             items.add("--- Mis Últimas Partidas ---")
                             playerScores.take(5).forEachIndexed { index, s ->
@@ -80,11 +84,12 @@ class ScoresActivity : BaseActivity() {
                             }
                         }
                     }
-                    else -> {}
+                    is NetworkResult.Error -> items.add("Error del ranking (${leaderboardResult.statusCode}). Pulsa atrás y reintenta.")
+                    is NetworkResult.Exception -> items.add("No se pudo conectar con el ranking. Pulsa atrás y reintenta.")
                 }
 
                 if (items.isEmpty()) {
-                    loadLocalFallbackScores(mode)
+                    showRemoteError("No hay datos remotos para este modo.")
                 } else {
                     binding.scoresList.adapter = ArrayAdapter(
                         this@ScoresActivity,
@@ -96,26 +101,11 @@ class ScoresActivity : BaseActivity() {
         }
     }
 
-    private fun loadLocalFallbackScores(mode: String) {
-        val scores = ScoreManager(this).getTopScores(10, mode)
-        val items = if (scores.isEmpty()) {
-            listOf(getString(R.string.scores_empty))
-        } else {
-            scores.mapIndexed { index, entry ->
-                getString(
-                    R.string.score_item_format,
-                    index + 1,
-                    entry.name,
-                    entry.score,
-                    entry.date
-                )
-            }
-        }
-
+    private fun showRemoteError(message: String) {
         binding.scoresList.adapter = ArrayAdapter(
             this,
             android.R.layout.simple_list_item_1,
-            items
+            listOf(message)
         )
     }
 

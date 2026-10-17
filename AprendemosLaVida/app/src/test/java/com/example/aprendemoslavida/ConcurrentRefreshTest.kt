@@ -64,7 +64,7 @@ class ConcurrentRefreshTest {
 
         every { mockEditor.apply() } returns Unit
 
-        tokenStorage = TokenStorage(mockContext)
+        tokenStorage = TokenStorage(mockContext, mockSharedPreferences)
         // Set initial expired access token and valid refresh token
         inMemoryPrefsMap["key_access_token"] = "expired_access_token"
         inMemoryPrefsMap["key_refresh_token"] = "valid_refresh_token"

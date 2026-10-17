@@ -20,6 +20,25 @@ data class StoryGate(
     @SerializedName("currentQuestion") val currentQuestion: PresentedQuestion? = null
 )
 
+data class GateOpenResponse(
+    @SerializedName("gateId") val gateId: String? = null,
+    @SerializedName("status") val status: String? = null,
+    @SerializedName("points") val points: Int = 0,
+    @SerializedName("currentQuestion") val currentQuestion: PresentedQuestion? = null,
+    @SerializedName("nextQuestion") val nextQuestion: PresentedQuestion? = null
+)
+
+data class StoryAnswerResponse(
+    @SerializedName("correct") val correct: Boolean = false,
+    @SerializedName("points") val points: Int = 0,
+    @SerializedName("totalScore") val totalScore: Int = 0,
+    @SerializedName("gateStatus") val gateStatus: String? = null,
+    @SerializedName("correctOptionId") val correctOptionId: String? = null,
+    @SerializedName("correctNumericAnswer") val correctNumericAnswer: Int? = null,
+    @SerializedName("nextQuestion") val nextQuestion: PresentedQuestion? = null,
+    @SerializedName("sessionStatus") val sessionStatus: String? = null
+)
+
 data class StoryMap(
     @SerializedName("id") val id: String,
     @SerializedName("position") val position: Int,
@@ -31,11 +50,21 @@ data class StoryMap(
     @SerializedName("gates") val gates: List<StoryGate> = emptyList()
 )
 
-data class StorySanti(
+data class SantiState(
     @SerializedName("availableOnCurrentMap") val availableOnCurrentMap: Boolean,
     @SerializedName("status") val status: String, // AVAILABLE, OFFERED, ACTIVE, DECLINED, SUCCEEDED, FAILED
     @SerializedName("rewardPoints") val rewardPoints: Int = 500,
     @SerializedName("currentChallenge") val currentChallenge: PresentedQuestion? = null
+)
+
+typealias StorySanti = SantiState
+
+data class SantiAnswerResponse(
+    @SerializedName("correct") val correct: Boolean = false,
+    @SerializedName("points") val points: Int = 0,
+    @SerializedName("totalScore") val totalScore: Int = 0,
+    @SerializedName("status") val status: String? = null,
+    @SerializedName("nextChallenge") val nextChallenge: PresentedQuestion? = null
 )
 
 data class StorySession(

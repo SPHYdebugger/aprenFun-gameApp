@@ -7,7 +7,6 @@ import com.example.aprendemoslavida.data.model.GameSession
 import com.example.aprendemoslavida.data.model.SubmitGameAnswer
 import com.example.aprendemoslavida.data.network.NetworkResult
 import com.example.aprendemoslavida.data.network.ProblemJsonParser
-import java.util.UUID
 
 class GameSessionRepository(
     private val gameSessionApiService: GameSessionApiService
@@ -19,7 +18,7 @@ class GameSessionRepository(
         topicCode: String? = null,
         questionCount: Int = 20,
         locale: String = "es-ES",
-        idempotencyKey: String = UUID.randomUUID().toString()
+        idempotencyKey: String
     ): NetworkResult<GameSession> {
         return try {
             val response = gameSessionApiService.createGameSession(
@@ -54,7 +53,7 @@ class GameSessionRepository(
         sessionQuestionId: String,
         selectedOptionId: String? = null,
         numericAnswer: Int? = null,
-        idempotencyKey: String = UUID.randomUUID().toString()
+        idempotencyKey: String
     ): NetworkResult<GameAnswer> {
         return try {
             val response = gameSessionApiService.submitGameAnswer(

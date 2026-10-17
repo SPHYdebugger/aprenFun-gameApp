@@ -35,6 +35,12 @@ android {
         unitTests.returnDefaultValues = true
     }
 
+    lint {
+        // The Galician resource set intentionally falls back to Spanish for
+        // strings that have not been translated yet.
+        disable "MissingTranslation"
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17

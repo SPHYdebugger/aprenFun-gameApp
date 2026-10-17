@@ -15,6 +15,7 @@ import com.example.aprendemoslavida.data.model.LegacyImportStreak
 import com.example.aprendemoslavida.data.model.SantiActionRequest
 import com.example.aprendemoslavida.data.model.SubmitGameAnswer
 import com.example.aprendemoslavida.data.model.SubmitStoryAnswer
+import com.example.aprendemoslavida.data.model.SubjectMapper
 import com.google.gson.Gson
 import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
@@ -97,7 +98,7 @@ class GameContractTests {
             idempotencyKey = "idempotency-key-1",
             request = CreateGameSession(
                 childProfileId = "22222222-2222-2222-2222-222222222222",
-                subjectCode = "NATURAL"
+                subjectCode = SubjectMapper.CODE_NATURAL
             )
         )
 
@@ -177,18 +178,18 @@ class GameContractTests {
                 childProfileId = "22222222-2222-2222-2222-222222222222",
                 mapCount = 3,
                 durationSeconds = 600,
-                gateTopics = List(10) { "NATURAL" }
+                gateTopics = List(10) { SubjectMapper.CODE_NATURAL }
             )
         )
 
         assertTrue(createResponse.isSuccessful)
         assertEquals("story-s1", createResponse.body()?.id)
 
-        mockWebServer.enqueue(MockResponse().setResponseCode(200))
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("""{"status":"ACTIVE","currentQuestion":{"id":"q-open","contentQuestionId":"c-open","position":0,"interaction":"MULTIPLE_CHOICE","prompt":"P","options":[],"presentedAt":"2026-10-17T00:00:00Z"}}"""))
         val openGateRes = storySessionApiService.openStoryGate("story-s1", "gate-1")
         assertTrue(openGateRes.isSuccessful)
 
-        mockWebServer.enqueue(MockResponse().setResponseCode(200))
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("""{"availableOnCurrentMap":true,"status":"ACTIVE","rewardPoints":500}"""))
         val santiRes = storySessionApiService.updateSantiEncounter("story-s1", SantiActionRequest("ACCEPT"))
         assertTrue(santiRes.isSuccessful)
     }
@@ -280,7 +281,7 @@ class GameContractTests {
                 storyGameTimeMs = 600000,
                 storyMapCount = 3,
                 language = "es",
-                storyGateTopics = List(10) { "NATURAL" }
+                storyGateTopics = List(10) { SubjectMapper.CODE_NATURAL }
             ),
             avatar = LegacyImportAvatar(
                 gender = "NINO",

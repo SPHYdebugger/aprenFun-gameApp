@@ -1,5 +1,7 @@
 # Plan de Implementación - Primer PR: Conexión con aprenFun_back
 
+> Estado corregido (2026-10-17): PR1 no debe considerarse una integración completa. La existencia de repositorios, DTOs o tests de contrato no certifica el flujo de usuario conectado. En release el tráfico HTTP claro está desactivado; HTTP se permite únicamente en debug/local.
+
 ## 1. Visión General del Proyecto
 Este plan define la estrategia técnica para conectar la aplicación Android **AprendemosLaVida** con el backend **aprenFun_back**, cumpliendo estrictamente con el contrato de la API OpenAPI 3.1.0 (v0.8.0).
 

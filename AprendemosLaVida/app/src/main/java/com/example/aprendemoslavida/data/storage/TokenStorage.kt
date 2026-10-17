@@ -2,7 +2,6 @@ package com.example.aprendemoslavida.data.storage
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.example.aprendemoslavida.data.model.AuthTokensDto
@@ -13,9 +12,9 @@ import java.util.UUID
  * Stores: installationId (UUID), accessToken, refreshToken, activeChildId
  * Prohibits storing adult passwords or persistent guardian tokens.
  */
-class TokenStorage(context: Context) {
+class TokenStorage(context: Context, preferencesOverride: SharedPreferences? = null) {
 
-    private val prefs: SharedPreferences = createEncryptedSharedPreferences(context)
+    private val prefs: SharedPreferences = preferencesOverride ?: createEncryptedSharedPreferences(context)
 
     init {
         // Ensure X-Installation-Id exists on initialization
@@ -23,22 +22,17 @@ class TokenStorage(context: Context) {
     }
 
     private fun createEncryptedSharedPreferences(context: Context): SharedPreferences {
-        return try {
-            val masterKey = MasterKey.Builder(context)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                .build()
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
 
-            EncryptedSharedPreferences.create(
-                context,
-                PREFS_NAME,
-                masterKey,
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            )
-        } catch (e: Exception) {
-            Log.e(TAG, "Error initializing EncryptedSharedPreferences, falling back to standard prefs", e)
-            context.getSharedPreferences(PREFS_NAME_FALLBACK, Context.MODE_PRIVATE)
-        }
+        return EncryptedSharedPreferences.create(
+            context,
+            PREFS_NAME,
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
     }
 
     /**
@@ -99,9 +93,7 @@ class TokenStorage(context: Context) {
     }
 
     companion object {
-        private const val TAG = "TokenStorage"
         private const val PREFS_NAME = "secure_token_prefs"
-        private const val PREFS_NAME_FALLBACK = "token_prefs_fallback"
 
         private const val KEY_INSTALLATION_ID = "key_installation_id"
         private const val KEY_ACCESS_TOKEN = "key_access_token"
