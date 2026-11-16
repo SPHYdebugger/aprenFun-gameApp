@@ -3,6 +3,18 @@ plugins {
     id "org.jetbrains.kotlin.android"
 }
 
+// Debug BASE_URL is read from local.properties (not committed) so each developer
+// can switch environment without touching code. Example for staging:
+//   aprenfun.baseUrl=https://pc-staging.tail9df616.ts.net/api/v1/
+// Remove the line to fall back to the emulator host.
+def localProps = new Properties()
+def lp = rootProject.file("local.properties")
+if (lp.exists()) lp.withInputStream { localProps.load(it) }
+def devBaseUrl = localProps.getProperty("aprenfun.baseUrl", "http://10.0.2.2:8080/api/v1/").trim()
+if (!devBaseUrl.endsWith("/")) {
+    throw new GradleException("aprenfun.baseUrl in local.properties must end with '/' (Retrofit requirement): ${devBaseUrl}")
+}
+
 android {
     namespace "com.example.aprendemoslavida"
     compileSdk 34
@@ -22,7 +34,7 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField "String", "BASE_URL", "\"http://10.0.2.2:8080/api/v1/\""
+            buildConfigField "String", "BASE_URL", "\"${devBaseUrl}\""
         }
         release {
             minifyEnabled false
