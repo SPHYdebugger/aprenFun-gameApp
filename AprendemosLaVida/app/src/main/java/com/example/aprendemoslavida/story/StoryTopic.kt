@@ -8,5 +8,11 @@ enum class StoryTopic {
     ENGLISH,
     SOCIAL,
     LANGUAGE,
-    CASTLES
+    CASTLES;
+
+    /**
+     * Value expected by POST /story-sessions `gateTopics` (contract enum). It is the enum name,
+     * not the subject/topic code used by game-sessions (natural-sciences, multiplication...).
+     */
+    val apiCode: String get() = name
 }
