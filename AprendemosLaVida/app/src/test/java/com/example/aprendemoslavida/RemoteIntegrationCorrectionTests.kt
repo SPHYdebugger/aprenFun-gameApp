@@ -15,6 +15,7 @@ import com.example.aprendemoslavida.data.model.LegacyImportAvatar
 import com.example.aprendemoslavida.data.model.LegacyImportPreferences
 import com.example.aprendemoslavida.data.model.LegacyImportStreak
 import com.example.aprendemoslavida.data.model.SubjectMapper
+import com.example.aprendemoslavida.data.model.questionForGate
 import com.example.aprendemoslavida.data.repository.LegacyImportRepository
 import com.example.aprendemoslavida.data.network.NetworkResult
 import com.google.gson.Gson
@@ -64,10 +65,11 @@ class RemoteIntegrationCorrectionTests {
 
     @Test
     fun storyMutationResponsesAreJsonModels() = runBlocking {
-        server.enqueue(MockResponse().setResponseCode(200).setBody("""{"status":"ACTIVE","currentQuestion":{"id":"q-1","contentQuestionId":"c-1","position":0,"interaction":"MULTIPLE_CHOICE","prompt":"P","options":[],"presentedAt":"2026-10-17T00:00:00Z"}}"""))
+        // F-14: open answers with the StorySession snapshot; the exercise is inside the opened gate.
+        server.enqueue(MockResponse().setResponseCode(200).setBody("""{"id":"s-1","status":"ACTIVE","release":"r","locale":"es-ES","startedAt":"2026-10-17T00:00:00Z","remainingTimeMs":1000,"score":0,"mapCount":3,"completedMaps":0,"currentMap":{"id":"m-1","position":0,"visualTheme":"FOREST","layoutSeed":1,"status":"CURRENT","resolvedGates":0,"minimumGatesToExit":5,"gates":[{"id":"g-1","position":0,"topic":"NATURAL","optional":false,"status":"ACTIVE","points":0,"currentQuestion":{"id":"q-1","contentQuestionId":"c-1","position":0,"interaction":"MULTIPLE_CHOICE","prompt":"P","options":[],"presentedAt":"2026-10-17T00:00:00Z"}}]}}"""))
         val gate = storyApi.openStoryGate("s-1", "g-1")
         assertTrue(gate.isSuccessful)
-        assertEquals("q-1", gate.body()?.currentQuestion?.id)
+        assertEquals("q-1", gate.body()?.questionForGate("g-1")?.id)
 
         server.enqueue(MockResponse().setResponseCode(200).setBody("""{"correct":true,"points":100,"totalScore":100,"sessionStatus":"ACTIVE"}"""))
         val answer = storyApi.submitStoryAnswer("s-1", "same-key", com.example.aprendemoslavida.data.model.SubmitStoryAnswer("g-1", "q-1", selectedOptionId = "o-1"))

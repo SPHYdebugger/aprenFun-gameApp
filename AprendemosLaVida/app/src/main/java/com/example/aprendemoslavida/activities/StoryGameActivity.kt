@@ -15,6 +15,7 @@ import com.example.aprendemoslavida.data.model.SantiState
 import com.example.aprendemoslavida.data.model.StoryAnswerResponse
 import com.example.aprendemoslavida.data.model.StorySession
 import com.example.aprendemoslavida.data.model.SubjectMapper
+import com.example.aprendemoslavida.data.model.questionForGate
 import com.example.aprendemoslavida.data.network.ApiClient
 import com.example.aprendemoslavida.data.network.NetworkResult
 import com.example.aprendemoslavida.data.repository.StorySessionRepository
@@ -40,6 +41,10 @@ class StoryGameActivity : BaseActivity() {
     private var currentGateId: String? = null
     private var currentQuestion: PresentedQuestion? = null
     private var actionInFlight = false
+    // F-14 loop guards: Santi is offered at most once per map, and an exit is requested once per map.
+    private var santiOfferedForMapId: String? = null
+    private var santiDialog: AlertDialog? = null
+    private var exitRequestedForMapId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -115,18 +120,26 @@ class StoryGameActivity : BaseActivity() {
             finishStorySession()
             return
         }
+        // A gate that is already open carries its exercise in the snapshot: ask it without reopening.
+        val activeGate = map.gates.firstOrNull { it.status == "ACTIVE" && it.currentQuestion != null }
+        if (activeGate != null) {
+            currentGateId = activeGate.id
+            askGateQuestion(activeGate.currentQuestion!!)
+            return
+        }
         val gate = map.gates.firstOrNull { it.status != "RESOLVED" }
         if (gate != null) {
             currentGateId = gate.id
             openGate(gate.id)
             return
         }
-        if (map.resolvedGates >= map.minimumGatesToExit) {
+        if (map.resolvedGates >= map.minimumGatesToExit && exitRequestedForMapId != map.id) {
+            exitRequestedForMapId = map.id
             exitMap(map.id)
             return
         }
-        showStoryState("El mapa no tiene otra puerta disponible. Actualizando el estado…")
-        refreshSession()
+        // No automatic retry here: the next request waits for the user (avoids request loops).
+        showStoryState("No se puede avanzar en este mapa ahora mismo.", onContinue = ::refreshSession)
     }
 
     private fun openGate(gateId: String) {
@@ -138,9 +151,15 @@ class StoryGameActivity : BaseActivity() {
                 actionInFlight = false
                 when (result) {
                     is NetworkResult.Success -> {
+                        session = result.data
+                        updateHud()
                         currentGateId = gateId
-                        val q = result.data.currentQuestion ?: result.data.nextQuestion
-                        if (q != null) askGateQuestion(q) else refreshSession()
+                        val q = result.data.questionForGate(gateId)
+                        if (q != null) {
+                            askGateQuestion(q)
+                        } else {
+                            showStoryState("No se pudo cargar la pregunta de la puerta.", onContinue = ::refreshSession)
+                        }
                     }
                     is NetworkResult.Error -> showNetworkError(result.statusCode, result.problem.detail)
                     is NetworkResult.Exception -> showRetry("No se pudo abrir la puerta. Reintenta.")
@@ -151,6 +170,7 @@ class StoryGameActivity : BaseActivity() {
 
     private fun askGateQuestion(question: PresentedQuestion) {
         currentQuestion = question
+        binding.introOverlay.visibility = View.GONE
         val options = question.options.map { it.text }.toTypedArray()
         if (options.isEmpty()) {
             val input = EditText(this).apply {
@@ -159,14 +179,14 @@ class StoryGameActivity : BaseActivity() {
             }
             AlertDialog.Builder(this).setTitle("Pregunta").setMessage(question.prompt).setView(input)
                 .setPositiveButton("Responder") { _, _ -> submitGateAnswer(numericAnswer = input.text.toString().toIntOrNull()) }
-                .setNegativeButton("Cancelar", null).show()
+                .setNegativeButton("Cancelar") { _, _ -> showStoryState("Puerta pendiente.") }.show()
             return
         }
         AlertDialog.Builder(this).setTitle("Puerta").setMessage(question.prompt)
             .setSingleChoiceItems(options, -1) { dialog, which ->
                 dialog.dismiss()
                 submitGateAnswer(selectedOptionId = question.options[which].id)
-            }.setNegativeButton("Cancelar", null).show()
+            }.setNegativeButton("Cancelar") { _, _ -> showStoryState("Puerta pendiente.") }.show()
     }
 
     private fun submitGateAnswer(selectedOptionId: String? = null, numericAnswer: Int? = null) {
@@ -202,12 +222,19 @@ class StoryGameActivity : BaseActivity() {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
-    private fun offerSanti(santi: SantiState) {
-        if (!santi.availableOnCurrentMap || santi.status != "AVAILABLE") return
-        AlertDialog.Builder(this).setTitle("Reto de Santi")
+    /** Returns true when the offer dialog is shown; the story continues after the user's choice. */
+    private fun offerSanti(santi: SantiState): Boolean {
+        if (!santi.availableOnCurrentMap || santi.status != "AVAILABLE") return false
+        val mapId = session?.currentMap?.id ?: return false
+        if (santiOfferedForMapId == mapId || santiDialog?.isShowing == true) return false
+        santiOfferedForMapId = mapId
+        santiDialog = AlertDialog.Builder(this).setTitle("Reto de Santi")
             .setMessage("¿Quieres aceptar el reto extra de ${santi.rewardPoints} puntos?")
+            .setCancelable(false)
             .setPositiveButton("Aceptar") { _, _ -> updateSanti("ACCEPT") }
-            .setNegativeButton("No", null).show()
+            .setNegativeButton("No") { _, _ -> continueStory() }
+            .show()
+        return true
     }
 
     private fun updateSanti(action: String) {
@@ -294,8 +321,8 @@ class StoryGameActivity : BaseActivity() {
                     is NetworkResult.Success -> {
                         session = result.data
                         updateHud()
-                        result.data.santi?.let { offerSanti(it) }
-                        continueStory()
+                        val santiShown = result.data.santi?.let { offerSanti(it) } ?: false
+                        if (!santiShown) continueStory()
                     }
                     is NetworkResult.Error -> showNetworkError(result.statusCode, result.problem.detail)
                     is NetworkResult.Exception -> showRetry("No se pudo actualizar la historia.")
@@ -343,13 +370,16 @@ class StoryGameActivity : BaseActivity() {
         binding.timeText.text = formatTime(current.remainingTimeMs)
     }
 
-    private fun showStoryState(message: String) {
+    private fun showStoryState(message: String, onContinue: () -> Unit = ::continueStory) {
         binding.introOverlay.visibility = View.VISIBLE
         binding.introButtonsRow.visibility = View.VISIBLE
         binding.introYesButton.text = "Continuar"
         binding.introNoButton.text = "Abandonar"
         binding.introText.text = message
-        binding.introYesButton.setOnClickListener { continueStory() }
+        binding.introYesButton.setOnClickListener {
+            binding.introOverlay.visibility = View.GONE
+            onContinue()
+        }
         binding.introNoButton.setOnClickListener { abandonStorySession() }
     }
 
@@ -382,6 +412,7 @@ class StoryGameActivity : BaseActivity() {
     }
 
     override fun onDestroy() {
+        santiDialog?.dismiss()
         countdown?.cancel()
         super.onDestroy()
     }

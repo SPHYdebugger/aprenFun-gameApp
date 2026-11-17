@@ -20,14 +20,6 @@ data class StoryGate(
     @SerializedName("currentQuestion") val currentQuestion: PresentedQuestion? = null
 )
 
-data class GateOpenResponse(
-    @SerializedName("gateId") val gateId: String? = null,
-    @SerializedName("status") val status: String? = null,
-    @SerializedName("points") val points: Int = 0,
-    @SerializedName("currentQuestion") val currentQuestion: PresentedQuestion? = null,
-    @SerializedName("nextQuestion") val nextQuestion: PresentedQuestion? = null
-)
-
 data class StoryAnswerResponse(
     @SerializedName("correct") val correct: Boolean = false,
     @SerializedName("points") val points: Int = 0,
@@ -97,3 +89,10 @@ data class SantiAnswerRequest(
     @SerializedName("sessionQuestionId") val sessionQuestionId: String,
     @SerializedName("numericAnswer") val numericAnswer: Int
 )
+
+/**
+ * POST /story-sessions/{id}/gates/{gateId}/open answers with the full StorySession snapshot;
+ * the presented exercise lives in the opened gate inside currentMap (F-14).
+ */
+fun StorySession.questionForGate(gateId: String): PresentedQuestion? =
+    currentMap?.gates?.firstOrNull { it.id == gateId }?.currentQuestion

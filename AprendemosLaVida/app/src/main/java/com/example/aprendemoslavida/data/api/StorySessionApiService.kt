@@ -5,7 +5,6 @@ import com.example.aprendemoslavida.data.model.SantiActionRequest
 import com.example.aprendemoslavida.data.model.SantiAnswerRequest
 import com.example.aprendemoslavida.data.model.StorySession
 import com.example.aprendemoslavida.data.model.SubmitStoryAnswer
-import com.example.aprendemoslavida.data.model.GateOpenResponse
 import com.example.aprendemoslavida.data.model.StoryAnswerResponse
 import com.example.aprendemoslavida.data.model.SantiAnswerResponse
 import com.example.aprendemoslavida.data.model.SantiState
@@ -33,7 +32,7 @@ interface StorySessionApiService {
     suspend fun openStoryGate(
         @Path("sessionId") sessionId: String,
         @Path("gateId") gateId: String
-    ): Response<GateOpenResponse>
+    ): Response<StorySession>
 
     @POST("story-sessions/{sessionId}/answers")
     suspend fun submitStoryAnswer(
