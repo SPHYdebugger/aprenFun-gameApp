@@ -54,7 +54,8 @@ object GuardianPasswordDialog {
                                 onTokenSuccess(result.data.token)
                             }
                             is NetworkResult.Error -> {
-                                val detail = result.problem.detail ?: context.getString(R.string.time_up)
+                                val detail = result.problem.detail
+                                    ?: context.getString(R.string.server_error_generic, result.statusCode)
                                 binding.passwordInputLayout.error = detail
                             }
                             is NetworkResult.Exception -> {

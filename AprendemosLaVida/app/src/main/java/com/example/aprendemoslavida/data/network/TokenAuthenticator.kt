@@ -29,11 +29,19 @@ class TokenAuthenticator(
     override fun authenticate(route: Route?, response: Response): Request? {
         val path = response.request.url.encodedPath
 
-        // Avoid infinite loop if 401 occurs on refresh or login endpoints
+        // These endpoints answer 401 for bad credentials, never for an expired session
         if (path.endsWith("/auth/refresh") ||
             path.endsWith("/auth/login") ||
-            path.endsWith("/auth/register")
+            path.endsWith("/auth/register") ||
+            path.endsWith("/auth/guardian-action-token")
         ) {
+            return null
+        }
+
+        // Only an expired/invalid access token justifies a refresh. The server signals it with
+        // `WWW-Authenticate: Bearer error="invalid_token"` (empty body). Any other 401, such as a
+        // problem+json for a wrong password, is returned to the caller untouched.
+        if (!isInvalidTokenChallenge(response)) {
             return null
         }
 
@@ -111,6 +119,12 @@ class TokenAuthenticator(
         }
     }
 
+    private fun isInvalidTokenChallenge(response: Response): Boolean =
+        response.headers("WWW-Authenticate").any { challenge ->
+            challenge.trim().startsWith("Bearer", ignoreCase = true) &&
+                INVALID_TOKEN_REGEX.containsMatchIn(challenge)
+        }
+
     private fun responseCount(response: Response): Int {
         var result = 1
         var priorResponse = response.priorResponse
@@ -123,5 +137,6 @@ class TokenAuthenticator(
 
     companion object {
         private const val TAG = "TokenAuthenticator"
+        private val INVALID_TOKEN_REGEX = Regex("""error\s*=\s*"?invalid_token"?""", RegexOption.IGNORE_CASE)
     }
 }
