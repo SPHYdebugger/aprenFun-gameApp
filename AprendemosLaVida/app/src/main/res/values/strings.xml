@@ -406,6 +406,8 @@
     <string name="guardian_dialog_title">Zona de Adultos</string>
     <string name="guardian_dialog_message">Confirma tu contraseña de adulto para continuar</string>
     <string name="guardian_dialog_confirm">Confirmar</string>
+    <string name="server_error_generic">Error en la comunicación con el servidor (%1$d)</string>
+    <string name="child_activate_error">No se pudo activar el perfil</string>
 
     <string name="profile_mgmt_title">Gestión de Perfiles Infantiles</string>
     <string name="profile_mgmt_create_title">Nuevo Perfil Infantil</string>

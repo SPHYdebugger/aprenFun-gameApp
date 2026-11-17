@@ -333,6 +333,8 @@
     <string name="guardian_dialog_title">Zona de Adultos</string>
     <string name="guardian_dialog_message">Confirma o teu contrasinal de adulto para continuar</string>
     <string name="guardian_dialog_confirm">Confirmar</string>
+    <string name="server_error_generic">Erro na comunicación co servidor (%1$d)</string>
+    <string name="child_activate_error">Non se puido activar o perfil</string>
 
     <string name="profile_mgmt_title">Xestión de Perfiles Infantís</string>
     <string name="profile_mgmt_create_title">Novo Perfil Infantil</string>

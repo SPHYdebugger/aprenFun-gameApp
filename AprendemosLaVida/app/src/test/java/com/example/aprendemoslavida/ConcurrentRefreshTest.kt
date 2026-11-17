@@ -25,6 +25,10 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 class ConcurrentRefreshTest {
 
+    companion object {
+        private const val INVALID_TOKEN_CHALLENGE = "Bearer error=\"invalid_token\", error_description=\"Jwt expired\""
+    }
+
     private lateinit var mockWebServer: MockWebServer
     private lateinit var tokenStorage: TokenStorage
     private lateinit var accountApiService: AccountApiService
@@ -96,8 +100,8 @@ class ConcurrentRefreshTest {
     @Test
     fun testConcurrentRefreshExecutesSingleRefreshCall() = runBlocking {
         // Enqueue 2 initial 401 responses for parallel requests
-        mockWebServer.enqueue(MockResponse().setResponseCode(401))
-        mockWebServer.enqueue(MockResponse().setResponseCode(401))
+        mockWebServer.enqueue(MockResponse().setResponseCode(401).setHeader("WWW-Authenticate", INVALID_TOKEN_CHALLENGE))
+        mockWebServer.enqueue(MockResponse().setResponseCode(401).setHeader("WWW-Authenticate", INVALID_TOKEN_CHALLENGE))
 
         // Enqueue 1 refresh success response
         val refreshResponseJson = """

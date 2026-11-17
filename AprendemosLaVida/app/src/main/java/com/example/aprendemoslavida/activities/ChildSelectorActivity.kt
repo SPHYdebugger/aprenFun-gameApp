@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.aprendemoslavida.R
 import com.example.aprendemoslavida.data.model.ChildDto
 import com.example.aprendemoslavida.data.model.GuardianTokenRequest
 import com.example.aprendemoslavida.data.network.ApiClient
@@ -69,7 +70,7 @@ class ChildSelectorActivity : BaseActivity() {
                         val children = result.data
                         val activeId = apiClient.tokenStorage.getActiveChildId()
                         binding.childrenRecyclerView.adapter = ChildrenAdapter(children, activeId) { child ->
-                            activateProfile(child.id)
+                            onChildSelected(child.id)
                         }
                     }
                     is NetworkResult.Error -> {
@@ -83,10 +84,27 @@ class ChildSelectorActivity : BaseActivity() {
         }
     }
 
-    private fun activateProfile(childId: String) {
+    /**
+     * The backend only lets a child be activated without a guardian token when it is already the
+     * last active child on this installation. Any other child needs a MANAGE_CHILDREN token, so we
+     * ask for the guardian password first. Cancelling the dialog makes no request.
+     */
+    private fun onChildSelected(childId: String) {
+        if (childId == apiClient.tokenStorage.getActiveChildId()) {
+            activateProfile(childId, guardianToken = null)
+            return
+        }
+        GuardianPasswordDialog.show(
+            context = this,
+            purpose = GuardianTokenRequest.PURPOSE_MANAGE_CHILDREN,
+            onTokenSuccess = { token -> activateProfile(childId, token) }
+        )
+    }
+
+    private fun activateProfile(childId: String, guardianToken: String?) {
         binding.progressBar.visibility = View.VISIBLE
         CoroutineScope(Dispatchers.IO).launch {
-            val result = profileRepository.activateChild(childId)
+            val result = profileRepository.activateChild(childId, guardianToken)
             withContext(Dispatchers.Main) {
                 binding.progressBar.visibility = View.GONE
                 when (result) {
@@ -95,7 +113,9 @@ class ChildSelectorActivity : BaseActivity() {
                         finish()
                     }
                     is NetworkResult.Error -> {
-                        Toast.makeText(this@ChildSelectorActivity, "No se pudo activar el perfil", Toast.LENGTH_SHORT).show()
+                        val message = result.problem.detail
+                            ?: getString(R.string.child_activate_error)
+                        Toast.makeText(this@ChildSelectorActivity, message, Toast.LENGTH_LONG).show()
                     }
                     is NetworkResult.Exception -> {
                         Toast.makeText(this@ChildSelectorActivity, "Error de red", Toast.LENGTH_SHORT).show()

@@ -77,7 +77,7 @@ class StoryGameActivity : BaseActivity() {
         actionInFlight = true
         val action = "story_create_${childId}_${SettingsManager.getStoryMapCount(this)}"
         val key = idempotency.getOrCreateKey(action)
-        val topics = SettingsManager.getStoryGateTopics(this).map(::backendTopic)
+        val topics = SettingsManager.getStoryGateTopics(this).map { it.apiCode }
         CoroutineScope(Dispatchers.IO).launch {
             val result = repository.createStorySession(
                 childProfileId = childId,
@@ -365,16 +365,6 @@ class StoryGameActivity : BaseActivity() {
     private fun formatTime(ms: Long): String {
         val seconds = (ms / 1000L).coerceAtLeast(0L)
         return getString(R.string.story_time_format, (seconds / 60).toInt(), (seconds % 60).toInt())
-    }
-
-    private fun backendTopic(topic: StoryTopic): String = when (topic) {
-        StoryTopic.NATURAL -> SubjectMapper.CODE_NATURAL
-        StoryTopic.MATH_MULTIPLICATION -> SubjectMapper.TOPIC_MULTIPLICATION
-        StoryTopic.MATH_ADD_SUB -> SubjectMapper.TOPIC_ADD_SUB
-        StoryTopic.ENGLISH -> SubjectMapper.CODE_ENGLISH
-        StoryTopic.SOCIAL -> SubjectMapper.CODE_SOCIAL
-        StoryTopic.LANGUAGE -> SubjectMapper.CODE_LANGUAGE
-        StoryTopic.CASTLES -> SubjectMapper.TOPIC_CASTLES
     }
 
     private fun showRetry(message: String) = Toast.makeText(this, message, Toast.LENGTH_LONG).show()
