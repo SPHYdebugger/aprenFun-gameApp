@@ -29,11 +29,12 @@ class TokenAuthenticator(
     override fun authenticate(route: Route?, response: Response): Request? {
         val path = response.request.url.encodedPath
 
-        // These endpoints answer 401 for bad credentials, never for an expired session
+        // These endpoints are unauthenticated, so a 401 there is never an expired session.
+        // /auth/guardian-action-token is NOT listed: it requires the access token, and an expired
+        // one must be refreshed (invalid_token challenge below); a wrong password has no challenge.
         if (path.endsWith("/auth/refresh") ||
             path.endsWith("/auth/login") ||
-            path.endsWith("/auth/register") ||
-            path.endsWith("/auth/guardian-action-token")
+            path.endsWith("/auth/register")
         ) {
             return null
         }
