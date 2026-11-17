@@ -133,4 +133,37 @@ class TokenAuthenticator401Test {
         assertEquals("Bearer new_access", server.takeRequest().getHeader("Authorization"))
         assertEquals("new_refresh", prefs["key_refresh_token"])
     }
+
+    @Test
+    fun invalidTokenOnGuardianEndpointRefreshesAndRetriesWithSamePassword() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(401)
+                .setHeader("WWW-Authenticate", "Bearer error=\"invalid_token\", error_description=\"Jwt expired\"")
+        )
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """{"tokenType":"Bearer","accessToken":"new_access","accessTokenExpiresAt":"2026-12-01T00:00:00Z",
+                   "refreshToken":"new_refresh","installationId":"11111111-2222-3333-4444-555555555555"}"""
+            )
+        )
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """{"token":"guardian_token","expiresAt":"2026-11-17T15:00:00Z","purpose":"MANAGE_CHILDREN"}"""
+            )
+        )
+
+        val response = authApi.createGuardianActionToken(
+            GuardianTokenRequest("right-password", GuardianTokenRequest.PURPOSE_MANAGE_CHILDREN)
+        )
+
+        assertEquals(200, response.code())
+        assertEquals("guardian_token", response.body()?.token)
+        val first = server.takeRequest()
+        assertEquals("/auth/refresh", server.takeRequest().path)
+        val retry = server.takeRequest()
+        assertEquals("/auth/guardian-action-token", retry.path)
+        assertEquals("Bearer new_access", retry.getHeader("Authorization"))
+        assertEquals(first.body.readUtf8(), retry.body.readUtf8())
+        assertEquals("new_refresh", prefs["key_refresh_token"])
+    }
 }
