@@ -7,6 +7,7 @@ import com.example.aprendemoslavida.data.model.SantiAnswerRequest
 import com.example.aprendemoslavida.data.model.SantiAnswerResponse
 import com.example.aprendemoslavida.data.model.SantiState
 import com.example.aprendemoslavida.data.model.StorySession
+import com.example.aprendemoslavida.data.model.StoryGateOpenResponse
 import com.example.aprendemoslavida.data.model.StoryAnswerResponse
 import com.example.aprendemoslavida.data.model.SubmitStoryAnswer
 import com.example.aprendemoslavida.data.network.NetworkResult
@@ -52,7 +53,7 @@ class StorySessionRepository(
         }
     }
 
-    suspend fun openStoryGate(sessionId: String, gateId: String): NetworkResult<StorySession> {
+    suspend fun openStoryGate(sessionId: String, gateId: String): NetworkResult<StoryGateOpenResponse> {
         return try {
             val response = storySessionApiService.openStoryGate(sessionId, gateId)
             if (response.isSuccessful && response.body() != null) {

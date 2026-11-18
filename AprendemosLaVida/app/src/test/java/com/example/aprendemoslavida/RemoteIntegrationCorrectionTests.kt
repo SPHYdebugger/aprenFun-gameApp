@@ -15,7 +15,6 @@ import com.example.aprendemoslavida.data.model.LegacyImportAvatar
 import com.example.aprendemoslavida.data.model.LegacyImportPreferences
 import com.example.aprendemoslavida.data.model.LegacyImportStreak
 import com.example.aprendemoslavida.data.model.SubjectMapper
-import com.example.aprendemoslavida.data.model.questionForGate
 import com.example.aprendemoslavida.data.repository.LegacyImportRepository
 import com.example.aprendemoslavida.data.network.NetworkResult
 import com.google.gson.Gson

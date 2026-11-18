@@ -176,6 +176,15 @@ class StoryCastleDialogFragment : DialogFragment() {
             return
         }
 
+        // Server mode: the backend grades the answer; the dialog only reports what was typed.
+        if (requireArguments().getBoolean(ARG_SERVER_MODE)) {
+            val value = enteredDigits.joinToString("") { it.ifEmpty { "0" } }.toIntOrNull() ?: return
+            resolved = true
+            dismissAllowingStateLoss()
+            (activity as? Listener)?.onStoryCastleSubmitted(gateId, value)
+            return
+        }
+
         val expectedPadded = expectedResult.toString().padStart(resultInputs.size, '0')
         val hasInvalidEmpty = enteredDigits.withIndex().any { (index, value) ->
             if (value.isNotEmpty()) return@any false
@@ -369,6 +378,8 @@ class StoryCastleDialogFragment : DialogFragment() {
     interface Listener {
         fun onStoryCastleResolved(gateId: Int, points: Int)
         fun onStoryCastleFailed(gateId: Int)
+        /** Server mode only: the typed result, to be graded by the backend. */
+        fun onStoryCastleSubmitted(gateId: Int, value: Int) {}
     }
 
     companion object {
@@ -380,6 +391,33 @@ class StoryCastleDialogFragment : DialogFragment() {
         private const val ARG_RESULT = "arg_result"
         private const val ARG_COLUMNS = "arg_columns"
         private const val ARG_TITLE = "arg_title"
+        private const val ARG_SERVER_MODE = "arg_server_mode"
+
+        /** Castle with an operation chosen by the server; the answer goes back through onStoryCastleSubmitted. */
+        fun newInstanceForServer(
+            gateId: Int,
+            top: Int,
+            bottom: Int,
+            subtraction: Boolean,
+            columns: Int,
+            title: String? = null
+        ): StoryCastleDialogFragment {
+            // The result is only used to size the answer row; it is never checked locally.
+            val sizing = if (subtraction) top - bottom else top + bottom
+            val needed = max(max(top.toString().length, bottom.toString().length), sizing.toString().length)
+            return StoryCastleDialogFragment().apply {
+                arguments = bundleOf(
+                    ARG_GATE_ID to gateId,
+                    ARG_TOP to top,
+                    ARG_BOTTOM to bottom,
+                    ARG_OPERATOR to if (subtraction) "-" else "+",
+                    ARG_RESULT to sizing,
+                    ARG_COLUMNS to max(columns, needed),
+                    ARG_TITLE to title.orEmpty(),
+                    ARG_SERVER_MODE to true
+                )
+            }
+        }
 
         fun newInstance(gateId: Int, title: String? = null): StoryCastleDialogFragment {
             val op = createRandomOperation()
