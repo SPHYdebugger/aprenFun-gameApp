@@ -91,8 +91,58 @@ data class SantiAnswerRequest(
 )
 
 /**
- * POST /story-sessions/{id}/gates/{gateId}/open answers with the full StorySession snapshot;
- * the presented exercise lives in the opened gate inside currentMap (F-14).
+ * POST /story-sessions/{id}/gates/{gateId}/open. The 200 schema is not in openapi.yaml (B-12),
+ * and staging has returned two shapes:
+ *  - 17-nov: the full StorySession snapshot (exercise inside currentMap.gates[i]) (F-14);
+ *  - 18-nov: `{sessionId, remainingTimeMs, gate}` with the opened gate only (F-16).
+ * Every field is nullable so either shape parses; use the helpers below.
  */
+data class StoryGateOpenResponse(
+    // 18-nov shape
+    @SerializedName("sessionId") val sessionId: String? = null,
+    @SerializedName("remainingTimeMs") val remainingTimeMs: Long? = null,
+    @SerializedName("gate") val gate: StoryGate? = null,
+    // 17-nov shape (StorySession snapshot)
+    @SerializedName("id") val id: String? = null,
+    @SerializedName("status") val status: String? = null,
+    @SerializedName("release") val release: String? = null,
+    @SerializedName("locale") val locale: String? = null,
+    @SerializedName("startedAt") val startedAt: String? = null,
+    @SerializedName("score") val score: Int? = null,
+    @SerializedName("mapCount") val mapCount: Int? = null,
+    @SerializedName("completedMaps") val completedMaps: Int? = null,
+    @SerializedName("finishReason") val finishReason: String? = null,
+    @SerializedName("currentMap") val currentMap: StoryMap? = null,
+    @SerializedName("santi") val santi: StorySanti? = null
+) {
+    /** The full snapshot, only when the server sent one (17-nov shape). */
+    fun fullSession(): StorySession? {
+        if (id == null || status == null || currentMap == null) return null
+        return StorySession(
+            id = id, status = status, release = release.orEmpty(), locale = locale.orEmpty(),
+            startedAt = startedAt.orEmpty(), remainingTimeMs = remainingTimeMs ?: 0L, score = score ?: 0,
+            mapCount = mapCount ?: 0, completedMaps = completedMaps ?: 0, finishReason = finishReason,
+            currentMap = currentMap, santi = santi
+        )
+    }
+
+    /** The opened gate as the server reports it, whatever the shape. */
+    fun openedGate(gateId: String): StoryGate? =
+        gate?.takeIf { it.id == gateId } ?: currentMap?.gates?.firstOrNull { it.id == gateId }
+
+    fun questionForGate(gateId: String): PresentedQuestion? = openedGate(gateId)?.currentQuestion
+
+    /** Applies this response to the last known session without inventing a game status. */
+    fun mergeInto(previous: StorySession): StorySession {
+        fullSession()?.let { return it }
+        val opened = gate ?: return previous
+        val map = previous.currentMap ?: return previous
+        return previous.copy(
+            remainingTimeMs = remainingTimeMs ?: previous.remainingTimeMs,
+            currentMap = map.copy(gates = map.gates.map { if (it.id == opened.id) opened else it })
+        )
+    }
+}
+
 fun StorySession.questionForGate(gateId: String): PresentedQuestion? =
     currentMap?.gates?.firstOrNull { it.id == gateId }?.currentQuestion

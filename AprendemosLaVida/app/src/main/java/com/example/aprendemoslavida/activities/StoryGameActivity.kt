@@ -247,7 +247,15 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     }
 
     /** Single entry point for every server snapshot: HUD, clock, map and gates follow the server. */
-    private fun applySession(snapshot: StorySession) {
+    private fun applySession(snapshot: StorySession, fromRefresh: Boolean = false) {
+        // A response without status/map is not a snapshot (unknown shape): never end the game on it.
+        // Ask once for the real state; if GET is also incomplete, stop and tell the player.
+        @Suppress("SENSELESS_COMPARISON")
+        if (snapshot.status == null || snapshot.id == null) {
+            if (fromRefresh) showRetry("Respuesta del servidor no reconocida. Reintenta más tarde.")
+            else refreshSession()
+            return
+        }
         session = snapshot
         if (snapshot.status != "ACTIVE") {
             goToResults(snapshot)
@@ -328,9 +336,10 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
                 actionInFlight = false
                 when (result) {
                     is NetworkResult.Success -> {
-                        applySession(result.data)
-                        val q = StoryServerBridge.serverGate(result.data.currentMap, currentDialogGateId ?: -1)
-                            ?.takeIf { it.id == serverGateId }?.currentQuestion
+                        // F-16: the server may answer with only the opened gate; merge it into the
+                        // known session instead of treating it as a full snapshot.
+                        session?.let { applySession(result.data.mergeInto(it)) }
+                        val q = result.data.questionForGate(serverGateId)
                         if (q != null) askQuestion(q) else {
                             showStoryToast("No se pudo cargar la pregunta de esta puerta")
                             closeQuestionState()
@@ -465,7 +474,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
             withContext(Dispatchers.Main) {
                 when (result) {
                     is NetworkResult.Success -> {
-                        applySession(result.data)
+                        applySession(result.data, fromRefresh = true)
                         onDone?.invoke()
                     }
                     is NetworkResult.Error -> showNetworkError(result.statusCode, result.problem.detail)
@@ -494,7 +503,12 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
             withContext(Dispatchers.Main) {
                 actionInFlight = false
                 when (result) {
-                    is NetworkResult.Success -> showWorldSummaryDialog(result.data, timeUp = false)
+                    is NetworkResult.Success -> {
+                        @Suppress("SENSELESS_COMPARISON")
+                        val complete = result.data.status != null && result.data.id != null
+                        if (complete) showWorldSummaryDialog(result.data, timeUp = false)
+                        else fetchSessionForSummary()
+                    }
                     is NetworkResult.Error -> {
                         showNetworkError(result.statusCode, result.problem.detail)
                         binding.storyGameView.setQuestionBlocking(false)
@@ -504,6 +518,22 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
                         binding.storyGameView.setQuestionBlocking(false)
                     }
                 }
+            }
+        }
+    }
+
+    /** Exit answered with an unknown shape: read the real state (once) before showing the summary. */
+    private fun fetchSessionForSummary() {
+        val id = session?.id ?: return
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = repository.getStorySession(id)
+            withContext(Dispatchers.Main) {
+                when (result) {
+                    is NetworkResult.Success -> showWorldSummaryDialog(result.data, timeUp = false)
+                    is NetworkResult.Error -> showNetworkError(result.statusCode, result.problem.detail)
+                    is NetworkResult.Exception -> showRetry("No se pudo actualizar la historia.")
+                }
+                if (result !is NetworkResult.Success) binding.storyGameView.setQuestionBlocking(false)
             }
         }
     }
