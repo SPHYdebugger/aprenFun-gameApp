@@ -89,8 +89,12 @@ class StoryGameView @JvmOverloads constructor(
     private var playerTilesetBitmap: Bitmap? = null
     private var playerTilesetTileSize: Int = 0
     private val playerFrameCount = 4
-    private val playerAnimFrameMs = 140L
-    private var playerAnimTimeMs = 0L
+    private val walkAnimator = StoryWalkAnimator(frameCount = playerFrameCount)
+    private val playerSpritePaint = Paint(Paint.FILTER_BITMAP_FLAG)
+    // Tamaño del sprite respecto a la caja de colisión (mantiene la altura visual de antes, ~0,69 tiles)
+    // y posición de los pies dentro del tile de la hoja (y = 488 de 512).
+    private val playerSpriteScale = 1.16f
+    private val playerFeetInTile = 488f / 512f
     private var playerAnimFrame = 0
     private var playerMoving = false
     private var facing: Facing = Facing.DOWN
@@ -317,12 +321,11 @@ class StoryGameView @JvmOverloads constructor(
         if (!interactionLocked) {
             val vector = movementVector()
             if (vector.first != 0f || vector.second != 0f) {
-                updateAnimation(deltaSec, moving = true)
-                updateFacing(vector.first, vector.second)
                 val distance = movementTilesPerSecond * deltaSec
-                tryMove(vector.first * distance, vector.second * distance)
+                val moved = tryMove(vector.first * distance, vector.second * distance)
+                updateWalk(vector.first, vector.second, moved)
             } else {
-                updateAnimation(deltaSec, moving = false)
+                updateWalk(0f, 0f, 0f)
                 lastBlockedGateId = null
             }
         }
@@ -360,8 +363,11 @@ class StoryGameView @JvmOverloads constructor(
         return (x / magnitude) to (y / magnitude)
     }
 
-    private fun tryMove(deltaX: Float, deltaY: Float) {
+    /** Mueve al jugador si no choca y devuelve la distancia recorrida de verdad (en tiles). */
+    private fun tryMove(deltaX: Float, deltaY: Float): Float {
         var moved = false
+        var movedX = 0f
+        var movedY = 0f
 
         if (deltaX != 0f) {
             val candidateCenterX = playerCenterX + deltaX
@@ -375,6 +381,7 @@ class StoryGameView @JvmOverloads constructor(
             )
             if (!storyMap.collidesWithWall(candidate, activeZone) && !isBlockedByGate(candidate)) {
                 playerCenterX += deltaX
+                movedX = deltaX
                 moved = true
             }
         }
@@ -391,6 +398,7 @@ class StoryGameView @JvmOverloads constructor(
             )
             if (!storyMap.collidesWithWall(candidate, activeZone) && !isBlockedByGate(candidate)) {
                 playerCenterY += deltaY
+                movedY = deltaY
                 moved = true
             }
         }
@@ -398,6 +406,7 @@ class StoryGameView @JvmOverloads constructor(
         if (moved) {
             lastBlockedGateId = null
         }
+        return sqrt((movedX * movedX) + (movedY * movedY))
     }
 
     private fun effectiveHiddenZoneForMove(candidateCenterX: Float, candidateCenterY: Float): Int {
@@ -483,11 +492,15 @@ class StoryGameView @JvmOverloads constructor(
         return frames[frameIndex.coerceIn(0, frames.lastIndex)]
     }
 
-    private fun updateFacing(vectorX: Float, vectorY: Float) {
-        facing = if (kotlin.math.abs(vectorX) > kotlin.math.abs(vectorY)) {
-            if (vectorX >= 0f) Facing.RIGHT else Facing.LEFT
-        } else {
-            if (vectorY >= 0f) Facing.DOWN else Facing.UP
+    private fun updateWalk(inputX: Float, inputY: Float, movedTiles: Float) {
+        walkAnimator.update(inputX, inputY, movedTiles)
+        playerMoving = walkAnimator.moving
+        playerAnimFrame = walkAnimator.frame
+        facing = when (walkAnimator.facing) {
+            StoryWalkAnimator.Facing.UP -> Facing.UP
+            StoryWalkAnimator.Facing.DOWN -> Facing.DOWN
+            StoryWalkAnimator.Facing.LEFT -> Facing.LEFT
+            StoryWalkAnimator.Facing.RIGHT -> Facing.RIGHT
         }
     }
 
@@ -613,76 +626,40 @@ class StoryGameView @JvmOverloads constructor(
         }
     }
 
-    private fun updateAnimation(deltaSec: Float, moving: Boolean) {
-        if (!moving) {
-            playerMoving = false
-            playerAnimTimeMs = 0L
-            playerAnimFrame = 0
-            return
-        }
-
-        val deltaMs = (deltaSec * 1000f).toLong().coerceAtLeast(0L)
-        playerMoving = true
-        playerAnimTimeMs += deltaMs
-        if (playerAnimTimeMs >= playerAnimFrameMs * playerFrameCount) {
-            playerAnimTimeMs %= (playerAnimFrameMs * playerFrameCount)
-        }
-        playerAnimFrame = (playerAnimTimeMs / playerAnimFrameMs).toInt().coerceIn(0, playerFrameCount - 1)
-    }
-
     private fun drawPlayer(canvas: Canvas, dst: RectF) {
-        if (!playerMoving) {
-            val idle = playerIdleBitmap
-            if (idle != null) {
-                canvas.drawBitmap(idle, null, dst, null)
-                return
-            }
-        }
-
-        val adjustedDst = adjustedPlayerDst(dst)
-        val frameBitmap = currentPlayerFrameBitmap()
-        if (frameBitmap != null) {
-            canvas.drawBitmap(frameBitmap, null, adjustedDst, null)
-            return
-        }
-
+        val spriteDst = playerSpriteDst(dst)
         val tileset = playerTilesetBitmap
         if (tileset != null && playerTilesetTileSize > 0) {
             val src = currentPlayerFrameRect()
             if (src != null) {
-                canvas.drawBitmap(tileset, src, adjustedDst, null)
+                canvas.drawBitmap(tileset, src, spriteDst, playerSpritePaint)
                 return
             }
         }
 
+        val frameBitmap = currentPlayerFrameBitmap()
+        if (frameBitmap != null) {
+            canvas.drawBitmap(frameBitmap, null, spriteDst, playerSpritePaint)
+            return
+        }
+
         val playerBitmap = currentPlayerBitmap()
         if (playerBitmap != null) {
-            canvas.drawBitmap(playerBitmap, null, adjustedDst, null)
+            canvas.drawBitmap(playerBitmap, null, spriteDst, playerSpritePaint)
         } else {
-            canvas.drawOval(adjustedDst, playerFallbackPaint)
+            canvas.drawOval(dst, playerFallbackPaint)
         }
     }
 
-    private fun adjustedPlayerDst(dst: RectF): RectF {
-        var adjusted = dst
-        if (facing == Facing.UP) {
-            // Up-facing imported frames are slightly narrower; widen a bit to match other directions.
-            val extraHalfWidth = adjusted.width() * 0.08f
-            adjusted = RectF(adjusted.left - extraHalfWidth, adjusted.top, adjusted.right + extraHalfWidth, adjusted.bottom)
-        }
-        if (playerMoving) {
-            adjusted = scaleRectFromCenter(adjusted, 0.90f)
-        }
-        return adjusted
-    }
-
-    private fun scaleRectFromCenter(rect: RectF, scale: Float): RectF {
-        val safeScale = scale.coerceIn(0.1f, 2f)
-        val cx = rect.centerX()
-        val cy = rect.centerY()
-        val halfW = (rect.width() * safeScale) / 2f
-        val halfH = (rect.height() * safeScale) / 2f
-        return RectF(cx - halfW, cy - halfH, cx + halfW, cy + halfH)
+    /**
+     * Rectángulo del sprite: el mismo parado y andando (sin saltos de tamaño), centrado en X y con los pies
+     * del dibujo sobre el borde inferior de la caja de colisión. El reposo usa el frame 0 de la dirección actual.
+     */
+    private fun playerSpriteDst(collisionRect: RectF): RectF {
+        val size = collisionRect.height() * playerSpriteScale
+        val left = collisionRect.centerX() - (size / 2f)
+        val top = collisionRect.bottom - (size * playerFeetInTile)
+        return RectF(left, top, left + size, top + size)
     }
 
     private fun currentPlayerFrameRect(): Rect? {
