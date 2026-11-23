@@ -22,8 +22,8 @@ object StoryPlayerSpriteSheetStore {
     private const val KEY_SIGNATURE = "avatar_signature"
     private const val KEY_VERSION = "sheet_version"
 
-    // 3: hoja montada por capas con animación de paso real (antes: avatar frontal enmascarado con plantillas).
-    private const val CACHE_VERSION = 3
+    // 3: hoja montada por capas con animación de paso real. 4: ropa básica y calzado como capa propia.
+    private const val CACHE_VERSION = 4
     private const val CACHE_DIR = "story_player_cache"
     private const val CACHE_FILE = "player_sheet_dynamic.png"
     const val FRAME_COUNT = 4
@@ -102,6 +102,7 @@ object StoryPlayerSpriteSheetStore {
             append('|').append(profile.mouthColor)
             append('|').append(profile.skinTone)
             append('|').append(profile.outfit)
+            append('|').append(profile.shoes)
             append('|').append(config.heldItemId ?: "none")
         }
         val digest = MessageDigest.getInstance("SHA-256").digest(source.toByteArray(Charsets.UTF_8))

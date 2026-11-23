@@ -351,4 +351,10 @@
     <string name="account_privacy_logout_all">Cerrar sesión en tódolos dispositivos</string>
     <string name="account_privacy_delete_account">Programar borrado de conta</string>
     <string name="account_privacy_delete_confirm">Estás seguro de programar o borrado definitivo da túa conta? Pecharase a sesión inmediatamente.</string>
+    <string name="avatar_outfit_basic_cd">Roupa básica</string>
+    <string name="avatar_outfit_gala_cd">Traxe de gala</string>
+    <string name="avatar_footwear_label">Calzado</string>
+    <string name="avatar_shoes_basic_cd">Calzado básico</string>
+    <string name="avatar_shoes_cd_format">Calzado %1$d</string>
+    <string name="avatar_shoes_locked_points_toast">Puntos globais: %1$d. Fáltanche %2$d puntos para desbloquear este calzado.</string>
 </resources>

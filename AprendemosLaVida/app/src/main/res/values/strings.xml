@@ -424,4 +424,10 @@
     <string name="account_privacy_logout_all">Cerrar sesión en todos los dispositivos</string>
     <string name="account_privacy_delete_account">Programar borrado de cuenta</string>
     <string name="account_privacy_delete_confirm">¿Estás seguro de programar el borrado definitivo de tu cuenta? Se cerrará la sesión inmediatamente.</string>
+    <string name="avatar_outfit_basic_cd">Ropa básica</string>
+    <string name="avatar_outfit_gala_cd">Traje de gala</string>
+    <string name="avatar_footwear_label">Calzado</string>
+    <string name="avatar_shoes_basic_cd">Calzado básico</string>
+    <string name="avatar_shoes_cd_format">Calzado %1$d</string>
+    <string name="avatar_shoes_locked_points_toast">Puntos globales: %1$d. Te faltan %2$d puntos para desbloquear este calzado.</string>
 </resources>

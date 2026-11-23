@@ -7,12 +7,13 @@ import android.graphics.Canvas
 import android.graphics.Paint
 
 /**
- * Apila las capas del avatar: cuerpo -> recorte con la máscara de la ropa -> sin piel por encima del pelo -> ropa -> pelo.
+ * Apila las capas del avatar: cuerpo -> recorte con la máscara de la ropa -> sin piel por encima del pelo
+ * -> calzado -> ropa -> pelo. El calzado va debajo de la ropa para que el bajo del pantalón caiga encima.
  *
  * La lógica de píxeles está en [LayerPixels] (Kotlin puro, probado en JVM); aquí solo se cargan y dibujan Bitmaps.
  */
 object AvatarLayerCompositor {
-    private const val CACHE_SIZE = 8
+    private const val CACHE_SIZE = 10
     private val bitmapCache = object : LinkedHashMap<String, Bitmap>(CACHE_SIZE, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Bitmap>?): Boolean = size > CACHE_SIZE
     }
@@ -25,12 +26,15 @@ object AvatarLayerCompositor {
     fun compose(context: Context, layers: AvatarLayerCatalog.Layers, rows: Int): Bitmap {
         val body = load(context, layers.body)
         val mask = load(context, layers.outfitMask)
+        val shoes = load(context, layers.shoes)
         val outfit = load(context, layers.outfit)
         val hair = load(context, layers.hair)
         val width = body.width
         val height = body.height
-        require(mask.width == width && mask.height == height && outfit.width == width && hair.width == width) {
-            "Las capas del avatar deben tener el mismo tamaño: $layers"
+        for (layer in listOf(mask, shoes, outfit, hair)) {
+            require(layer.width == width && layer.height == height) {
+                "Las capas del avatar deben tener el mismo tamaño: $layers"
+            }
         }
 
         val bodyPixels = IntArray(width * height).also { body.getPixels(it, 0, width, 0, 0, width, height) }
@@ -43,10 +47,14 @@ object AvatarLayerCompositor {
         result.setPixels(bodyPixels, 0, width, 0, 0, width, height)
         val canvas = Canvas(result)
         val paint = Paint(Paint.FILTER_BITMAP_FLAG)
+        canvas.drawBitmap(shoes, 0f, 0f, paint)
         canvas.drawBitmap(outfit, 0f, 0f, paint)
         canvas.drawBitmap(hair, 0f, 0f, paint)
         return result
     }
+
+    /** Carga (con caché) un PNG de assets. */
+    fun loadAsset(context: Context, assetPath: String): Bitmap = load(context, assetPath)
 
     @Synchronized
     private fun load(context: Context, assetPath: String): Bitmap {

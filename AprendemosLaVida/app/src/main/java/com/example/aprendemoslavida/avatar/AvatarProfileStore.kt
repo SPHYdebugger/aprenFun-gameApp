@@ -11,10 +11,11 @@ object AvatarProfileStore {
     fun load(context: Context): AvatarProfile {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val raw = prefs.getString(KEY_PROFILE_JSON, null) ?: return AvatarProfile()
+        val defaults = AvatarProfile()
         return try {
             val json = JSONObject(raw)
             AvatarProfile(
-                gender = json.optString("gender", "NINO"),
+                gender = json.optString("gender", defaults.gender),
                 hairStyle = json.optInt("hairStyle", 0),
                 hairColor = json.optInt("hairColor", 0),
                 eyeShape = json.optInt("eyeShape", 0),
@@ -22,7 +23,8 @@ object AvatarProfileStore {
                 mouthShape = json.optInt("mouthShape", 0),
                 mouthColor = json.optInt("mouthColor", 0),
                 skinTone = json.optInt("skinTone", 0),
-                outfit = json.optInt("outfit", 0)
+                outfit = json.optInt("outfit", defaults.outfit),
+                shoes = json.optInt("shoes", defaults.shoes)
             )
         } catch (_: Exception) {
             AvatarProfile()
@@ -40,6 +42,7 @@ object AvatarProfileStore {
             put("mouthColor", profile.mouthColor)
             put("skinTone", profile.skinTone)
             put("outfit", profile.outfit)
+            put("shoes", profile.shoes)
         }
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putString(KEY_PROFILE_JSON, json.toString()).apply()

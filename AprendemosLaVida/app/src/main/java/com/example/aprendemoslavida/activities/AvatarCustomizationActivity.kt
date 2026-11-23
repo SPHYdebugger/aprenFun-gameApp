@@ -1,16 +1,21 @@
 package com.example.aprendemoslavida.activities
 
-import android.os.Bundle
-import android.view.View
-import android.graphics.BitmapFactory
+import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.GradientDrawable
+import android.os.Bundle
+import android.view.Gravity
+import android.view.View
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.widget.AppCompatImageButton
 import androidx.core.content.ContextCompat
-import android.widget.TextView
 import com.example.aprendemoslavida.R
 import com.example.aprendemoslavida.avatar.AvatarBitmapBuilder
+import com.example.aprendemoslavida.avatar.AvatarLayerCatalog
+import com.example.aprendemoslavida.avatar.AvatarLayerCompositor
 import com.example.aprendemoslavida.avatar.AvatarProfileStore
 import com.example.aprendemoslavida.databinding.ActivityAvatarCustomizationBinding
 import com.example.aprendemoslavida.model.AvatarProfile
@@ -21,7 +26,7 @@ class AvatarCustomizationActivity : BaseActivity() {
     private lateinit var binding: ActivityAvatarCustomizationBinding
     private lateinit var profile: AvatarProfile
     private var isUpdatingGenderSwitch = false
-    private val outfitThumbCache = HashMap<String, BitmapDrawable>()
+    private val thumbCache = HashMap<String, BitmapDrawable>()
     private var globalPoints: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,7 +34,7 @@ class AvatarCustomizationActivity : BaseActivity() {
         binding = ActivityAvatarCustomizationBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        profile = normalizeProfile(AvatarProfileStore.load(this))
+        profile = AvatarLayerCatalog.normalize(AvatarProfileStore.load(this))
 
         setupListeners()
         refreshUi()
@@ -43,63 +48,44 @@ class AvatarCustomizationActivity : BaseActivity() {
     private fun setupListeners() {
         binding.genderSwitch.setOnCheckedChangeListener { _, isChecked ->
             if (isUpdatingGenderSwitch) return@setOnCheckedChangeListener
-            val selectedGender = if (isChecked) GENDERS[1] else GENDERS[0]
+            val selectedGender = if (isChecked) AvatarLayerCatalog.GENDER_GIRL else AvatarLayerCatalog.GENDER_BOY
             if (profile.gender != selectedGender) {
                 profile.gender = selectedGender
-                profile.outfit = 0
+                // La ropa y el calzado de cada género son distintos: se vuelve a los básicos, comunes a los dos.
+                profile.outfit = AvatarLayerCatalog.OUTFIT_BASIC
+                profile.shoes = 0
                 refreshUi()
             }
         }
 
         binding.hairStylePrevButton.setOnClickListener {
-            profile.hairStyle = wrapIndex(profile.hairStyle - 1, 3)
+            profile.hairStyle -= 1
             refreshUi()
         }
 
         binding.hairStyleNextButton.setOnClickListener {
-            profile.hairStyle = wrapIndex(profile.hairStyle + 1, 3)
+            profile.hairStyle += 1
             refreshUi()
         }
 
         binding.hairColorPrevButton.setOnClickListener {
-            profile.hairColor = wrapIndex(profile.hairColor - 1, HAIR_COLOR_NAMES.size)
+            profile.hairColor -= 1
             refreshUi()
         }
 
         binding.hairColorNextButton.setOnClickListener {
-            profile.hairColor = wrapIndex(profile.hairColor + 1, HAIR_COLOR_NAMES.size)
+            profile.hairColor += 1
             refreshUi()
         }
 
         binding.skinTonePrevButton.setOnClickListener {
-            profile.skinTone = wrapIndex(profile.skinTone - 1, SKIN_NAMES.size)
+            profile.skinTone -= 1
             refreshUi()
         }
 
         binding.skinToneNextButton.setOnClickListener {
-            profile.skinTone = wrapIndex(profile.skinTone + 1, SKIN_NAMES.size)
+            profile.skinTone += 1
             refreshUi()
-        }
-
-        outfitButtons().forEachIndexed { index, button ->
-            button.setOnClickListener {
-                if (!isOutfitUnlocked(index)) {
-                    val required = OUTFIT_UNLOCK_POINTS[index]
-                    val missing = (required - globalPoints).coerceAtLeast(0)
-                    Toast.makeText(
-                        this,
-                        getString(
-                            R.string.avatar_outfit_locked_points_toast,
-                            globalPoints,
-                            missing
-                        ),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    return@setOnClickListener
-                }
-                profile.outfit = index
-                refreshUi()
-            }
         }
 
         binding.saveButton.setOnClickListener {
@@ -111,20 +97,21 @@ class AvatarCustomizationActivity : BaseActivity() {
     }
 
     private fun refreshUi() {
-        profile = normalizeProfile(profile)
+        profile = AvatarLayerCatalog.normalize(profile)
         globalPoints = SettingsManager.getGlobalPoints(this)
 
-        val hairStyles = if (isGirl(profile)) HAIR_STYLE_GIRL else HAIR_STYLE_BOY
+        val hairStyles = if (AvatarLayerCatalog.isGirl(profile)) HAIR_STYLE_GIRL else HAIR_STYLE_BOY
 
         binding.hairStyleValueText.text = hairStyles[profile.hairStyle]
         binding.hairColorValueText.text = HAIR_COLOR_NAMES[profile.hairColor]
         binding.skinToneValueText.text = SKIN_NAMES[profile.skinTone]
 
-        setOutfitThumbnails()
+        buildOutfitRow()
+        buildShoesRow()
 
         isUpdatingGenderSwitch = true
-        binding.genderSwitch.isChecked = isGirl(profile)
-        binding.genderSwitch.text = if (isGirl(profile)) {
+        binding.genderSwitch.isChecked = AvatarLayerCatalog.isGirl(profile)
+        binding.genderSwitch.text = if (AvatarLayerCatalog.isGirl(profile)) {
             getString(R.string.avatar_gender_girl)
         } else {
             getString(R.string.avatar_gender_boy)
@@ -133,91 +120,153 @@ class AvatarCustomizationActivity : BaseActivity() {
         renderPreview()
     }
 
-    private fun setOutfitThumbnails() {
-        val paths = if (isGirl(profile)) OUTFIT_GIRL_PATHS else OUTFIT_BOY_PATHS
-        val buttons = outfitButtons()
-        val lockLabels = outfitLockLabels()
-        for (index in paths.indices) {
-            setOutfitThumb(
-                button = buttons[index],
-                lockLabel = lockLabels[index],
-                assetPath = paths[index],
-                selected = profile.outfit == index,
-                unlocked = isOutfitUnlocked(index),
-                requiredPoints = OUTFIT_UNLOCK_POINTS[index]
-            )
-        }
-    }
-
-    private fun setOutfitThumb(
-        button: AppCompatImageButton,
-        lockLabel: TextView,
-        assetPath: String,
-        selected: Boolean,
-        unlocked: Boolean,
-        requiredPoints: Int
-    ) {
-        button.setImageDrawable(loadOutfitThumb(assetPath))
-        button.isEnabled = true
-        button.alpha = if (unlocked) 1f else 0.45f
-        button.background = GradientDrawable().apply {
-            cornerRadius = dp(10).toFloat()
-            setColor(
-                when {
-                    !unlocked -> 0xFFE8E8E8.toInt()
-                    selected -> 0xFFFFE8C4.toInt()
-                    else -> 0xFFF6F1E8.toInt()
+    /** Ropa: «Básica» (siempre disponible) + las prendas del género, la última de gala. */
+    private fun buildOutfitRow() {
+        val row = binding.outfitRow
+        row.removeAllViews()
+        val outfits = listOf(AvatarLayerCatalog.OUTFIT_BASIC) + (0 until AvatarLayerCatalog.OUTFIT_COUNT).toList()
+        for (outfit in outfits) {
+            val required = if (outfit == AvatarLayerCatalog.OUTFIT_BASIC) 0 else AvatarLayerCatalog.OUTFIT_UNLOCK_POINTS[outfit]
+            row.addView(
+                itemView(
+                    thumb = loadThumb(AvatarLayerCatalog.outfitEditorLayer(profile, outfit), cropToContent = true),
+                    description = outfitDescription(outfit),
+                    selected = profile.outfit == outfit,
+                    unlocked = AvatarLayerCatalog.isOutfitUnlocked(outfit, globalPoints),
+                    requiredPoints = required
+                ) {
+                    if (!AvatarLayerCatalog.isOutfitUnlocked(outfit, globalPoints)) {
+                        showLockedToast(R.string.avatar_outfit_locked_points_toast, required)
+                    } else {
+                        profile.outfit = outfit
+                        refreshUi()
+                    }
                 }
             )
-            setStroke(
-                if (selected) dp(2) else dp(1),
-                if (selected && unlocked) ContextCompat.getColor(this@AvatarCustomizationActivity, R.color.primary) else 0xFFD0C3AF.toInt()
+        }
+    }
+
+    /** Calzado: el básico (siempre disponible) + los del género, con candado por puntos. */
+    private fun buildShoesRow() {
+        val row = binding.shoesRow
+        row.removeAllViews()
+        for (shoes in 0 until AvatarLayerCatalog.SHOES_COUNT) {
+            val required = AvatarLayerCatalog.SHOES_UNLOCK_POINTS[shoes]
+            row.addView(
+                itemView(
+                    thumb = loadThumb(AvatarLayerCatalog.shoesThumb(profile, shoes), cropToContent = false),
+                    description = if (shoes == 0) getString(R.string.avatar_shoes_basic_cd) else getString(R.string.avatar_shoes_cd_format, shoes),
+                    selected = profile.shoes == shoes,
+                    unlocked = AvatarLayerCatalog.isShoesUnlocked(shoes, globalPoints),
+                    requiredPoints = required
+                ) {
+                    if (!AvatarLayerCatalog.isShoesUnlocked(shoes, globalPoints)) {
+                        showLockedToast(R.string.avatar_shoes_locked_points_toast, required)
+                    } else {
+                        profile.shoes = shoes
+                        refreshUi()
+                    }
+                }
             )
         }
-
-        if (unlocked) {
-            lockLabel.visibility = View.INVISIBLE
-        } else {
-            lockLabel.visibility = View.VISIBLE
-            lockLabel.text = getString(R.string.avatar_outfit_lock_format, requiredPoints)
-        }
     }
 
-    private fun loadOutfitThumb(assetPath: String): BitmapDrawable {
-        return outfitThumbCache.getOrPut(assetPath) {
-            val bitmap = assets.open(assetPath).use { stream ->
-                BitmapFactory.decodeStream(stream)
-                    ?: throw IllegalStateException("No se pudo decodificar $assetPath")
+    private fun outfitDescription(outfit: Int): String = when (outfit) {
+        AvatarLayerCatalog.OUTFIT_BASIC -> getString(R.string.avatar_outfit_basic_cd)
+        AvatarLayerCatalog.OUTFIT_COUNT - 1 -> getString(R.string.avatar_outfit_gala_cd)
+        else -> getString(OUTFIT_DESCRIPTIONS[outfit])
+    }
+
+    private fun showLockedToast(messageRes: Int, required: Int) {
+        val missing = (required - globalPoints).coerceAtLeast(0)
+        Toast.makeText(this, getString(messageRes, globalPoints, missing), Toast.LENGTH_SHORT).show()
+    }
+
+    /** Botón de prenda o calzado: candado con los puntos necesarios encima y miniatura debajo. */
+    private fun itemView(
+        thumb: BitmapDrawable,
+        description: String,
+        selected: Boolean,
+        unlocked: Boolean,
+        requiredPoints: Int,
+        onClick: () -> Unit
+    ): View {
+        // Lo que se lleva puesto se ve como seleccionado aunque aún no esté desbloqueado (perfiles antiguos).
+        val looksUnlocked = unlocked || selected
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(dp(64), LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                marginEnd = dp(6)
             }
-            val thumbnail = android.graphics.Bitmap.createScaledBitmap(bitmap, dp(36), dp(36), true)
-            BitmapDrawable(resources, thumbnail)
+        }
+        val lockLabel = TextView(this).apply {
+            gravity = Gravity.CENTER
+            setTextColor(ContextCompat.getColor(this@AvatarCustomizationActivity, R.color.text_primary))
+            textSize = 11f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            text = if (unlocked) "" else getString(R.string.avatar_outfit_lock_format, requiredPoints)
+            visibility = if (unlocked) View.INVISIBLE else View.VISIBLE
+        }
+        val button = AppCompatImageButton(this).apply {
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(56))
+            setImageDrawable(thumb)
+            scaleType = ImageView.ScaleType.CENTER_INSIDE
+            setPadding(dp(6), dp(6), dp(6), dp(6))
+            contentDescription = description
+            alpha = if (looksUnlocked) 1f else 0.45f
+            background = GradientDrawable().apply {
+                cornerRadius = dp(10).toFloat()
+                setColor(
+                    when {
+                        selected -> 0xFFFFE8C4.toInt()
+                        !unlocked -> 0xFFE8E8E8.toInt()
+                        else -> 0xFFF6F1E8.toInt()
+                    }
+                )
+                setStroke(
+                    if (selected) dp(2) else dp(1),
+                    if (selected) ContextCompat.getColor(this@AvatarCustomizationActivity, R.color.primary) else 0xFFD0C3AF.toInt()
+                )
+            }
+            setOnClickListener { onClick() }
+        }
+        container.addView(lockLabel)
+        container.addView(button)
+        return container
+    }
+
+    /** Miniatura de 40 dp. Las capas de ropa (512) se recortan a su contenido para que la prenda se vea grande. */
+    private fun loadThumb(assetPath: String, cropToContent: Boolean): BitmapDrawable {
+        return thumbCache.getOrPut("$assetPath|$cropToContent") {
+            val source = AvatarLayerCompositor.loadAsset(this, assetPath)
+            val cropped = if (cropToContent) cropToOpaque(source) else source
+            val size = dp(40)
+            BitmapDrawable(resources, Bitmap.createScaledBitmap(cropped, size, size, true))
         }
     }
 
-    private fun dp(value: Int): Int =
-        (value * resources.displayMetrics.density).toInt()
-
-    private fun outfitButtons(): List<AppCompatImageButton> = listOf(
-        binding.outfitButton0,
-        binding.outfitButton1,
-        binding.outfitButton2,
-        binding.outfitButton3,
-        binding.outfitButton4,
-        binding.outfitButton5
-    )
-
-    private fun outfitLockLabels(): List<TextView> = listOf(
-        binding.outfitLockText0,
-        binding.outfitLockText1,
-        binding.outfitLockText2,
-        binding.outfitLockText3,
-        binding.outfitLockText4,
-        binding.outfitLockText5
-    )
-
-    private fun isOutfitUnlocked(index: Int): Boolean {
-        val required = OUTFIT_UNLOCK_POINTS.getOrElse(index) { Int.MAX_VALUE }
-        return globalPoints >= required
+    private fun cropToOpaque(source: Bitmap): Bitmap {
+        val w = source.width
+        val h = source.height
+        val pixels = IntArray(w * h).also { source.getPixels(it, 0, w, 0, 0, w, h) }
+        var minX = w
+        var minY = h
+        var maxX = -1
+        var maxY = -1
+        for (y in 0 until h) {
+            for (x in 0 until w) {
+                if (((pixels[y * w + x] ushr 24) and 0xFF) < 64) continue
+                if (x < minX) minX = x
+                if (x > maxX) maxX = x
+                if (y < minY) minY = y
+                if (y > maxY) maxY = y
+            }
+        }
+        if (maxX < minX) return source
+        val side = maxOf(maxX - minX, maxY - minY) + 1
+        val left = ((minX + maxX) / 2 - side / 2).coerceIn(0, maxOf(0, w - side))
+        val top = ((minY + maxY) / 2 - side / 2).coerceIn(0, maxOf(0, h - side))
+        return Bitmap.createBitmap(source, left, top, minOf(side, w - left), minOf(side, h - top))
     }
 
     private fun renderPreview() {
@@ -225,54 +274,23 @@ class AvatarCustomizationActivity : BaseActivity() {
         binding.avatarPreviewImage.setImageBitmap(bitmap)
     }
 
-    private fun normalizeProfile(input: AvatarProfile): AvatarProfile {
-        val normalized = input.copy()
-        if (normalized.gender != GENDERS[0] && normalized.gender != GENDERS[1]) {
-            normalized.gender = GENDERS[0]
-        }
-        normalized.hairStyle = wrapIndex(normalized.hairStyle, 3)
-        normalized.hairColor = wrapIndex(normalized.hairColor, HAIR_COLOR_NAMES.size)
-        normalized.eyeShape = wrapIndex(normalized.eyeShape, 3)
-        normalized.eyeColor = wrapIndex(normalized.eyeColor, 4)
-        normalized.mouthShape = wrapIndex(normalized.mouthShape, 3)
-        normalized.mouthColor = wrapIndex(normalized.mouthColor, 3)
-        normalized.skinTone = wrapIndex(normalized.skinTone, SKIN_NAMES.size)
-        normalized.outfit = wrapIndex(normalized.outfit, OUTFIT_BOY_PATHS.size)
-        return normalized
-    }
-
-    private fun isGirl(profile: AvatarProfile): Boolean = profile.gender == GENDERS[1]
-
-    private fun wrapIndex(value: Int, length: Int): Int {
-        val m = value % length
-        return if (m < 0) m + length else m
-    }
+    private fun dp(value: Int): Int =
+        (value * resources.displayMetrics.density).toInt()
 
     companion object {
-        private val GENDERS = arrayOf("NINO", "NINA")
-
         private val HAIR_STYLE_BOY = arrayOf("Corto", "Desordenado", "Flequillo")
         private val HAIR_STYLE_GIRL = arrayOf("Largo", "Coletas", "Bob")
 
         private val HAIR_COLOR_NAMES = arrayOf("Negro", "Castano", "Rubio")
         private val SKIN_NAMES = arrayOf("Tono 1", "Tono 2", "Tono 3")
-        private val OUTFIT_UNLOCK_POINTS = intArrayOf(10000, 25000, 50000, 80000, 100000, 150000)
 
-        private val OUTFIT_BOY_PATHS = arrayOf(
-            "avatar/outfit_boy_01.png",
-            "avatar/outfit_boy_02.png",
-            "avatar/outfit_boy_03.png",
-            "avatar/outfit_boy_04.png",
-            "avatar/outfit_boy_05.png",
-            "avatar/outfit_boy_06.png"
-        )
-        private val OUTFIT_GIRL_PATHS = arrayOf(
-            "avatar/outfit_girl_01.png",
-            "avatar/outfit_girl_02.png",
-            "avatar/outfit_girl_03.png",
-            "avatar/outfit_girl_04.png",
-            "avatar/outfit_girl_05b.png",
-            "avatar/outfit_girl_06.png"
+        private val OUTFIT_DESCRIPTIONS = intArrayOf(
+            R.string.avatar_outfit_1_cd,
+            R.string.avatar_outfit_2_cd,
+            R.string.avatar_outfit_3_cd,
+            R.string.avatar_outfit_4_cd,
+            R.string.avatar_outfit_5_cd,
+            R.string.avatar_outfit_6_cd
         )
     }
 }

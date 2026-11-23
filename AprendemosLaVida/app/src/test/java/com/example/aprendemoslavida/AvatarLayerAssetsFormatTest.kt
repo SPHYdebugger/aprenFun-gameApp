@@ -24,9 +24,10 @@ class AvatarLayerAssetsFormatTest {
     }
 
     @Test
-    fun `las 45 hojas del modo historia son 4x4 de 192 px`() {
+    fun `las hojas del modo historia son 4x4 de 192 px`() {
         val sheets = File(avatarDir, "story").listFiles { f -> f.extension == "png" }.orEmpty()
-        assertEquals(45, sheets.size)
+        // 3 cuerpos + 15 prendas + 15 máscaras + 18 pelos + 11 calzados
+        assertEquals(3 + 15 + 15 + 18 + 11, sheets.size)
         for (sheet in sheets) {
             assertEquals("Tamaño de ${sheet.name}", 768 to 768, pngSize(sheet))
         }
@@ -36,13 +37,21 @@ class AvatarLayerAssetsFormatTest {
     fun `las capas del editor son de 512 px`() {
         val catalogLayers = AvatarLayerCatalog.allProfiles()
             .map { AvatarLayerCatalog.editorLayers(it) }
-            .flatMap { listOf(it.body, it.outfit, it.outfitMask, it.hair) }
+            .flatMap { listOf(it.body, it.shoes, it.outfit, it.outfitMask, it.hair) }
             .distinct()
-        assertEquals(3 + 12 + 12 + 18, catalogLayers.size)
-        // Todas las capas del editor (también las que aún no ofrece el catálogo) comparten el lienzo de 512.
+        assertEquals(3 + 11 + 15 + 15 + 18, catalogLayers.size)
         val allPngs = avatarDir.listFiles { f -> f.isFile && f.extension == "png" }.orEmpty()
         for (layer in allPngs) {
             assertEquals("Tamaño de ${layer.name}", 512 to 512, pngSize(layer))
+        }
+    }
+
+    @Test
+    fun `las miniaturas del calzado son de 128 px`() {
+        val thumbs = File(avatarDir, "thumbs").listFiles { f -> f.extension == "png" }.orEmpty()
+        assertEquals(11, thumbs.size)
+        for (thumb in thumbs) {
+            assertEquals("Tamaño de ${thumb.name}", 128 to 128, pngSize(thumb))
         }
     }
 }
