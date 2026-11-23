@@ -1,5 +1,7 @@
 package com.example.aprendemoslavida.activities
 
+import com.example.aprendemoslavida.avatar.AvatarProfileStore
+import com.example.aprendemoslavida.avatar.AvatarLayerCatalog
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
@@ -28,6 +30,26 @@ class StoryAdminMenuActivity : BaseActivity() {
             startActivity(Intent(this, StoryMapCountSettingsActivity::class.java))
         }
 
+        updateDemoModeButtonLabel()
+        binding.demoModeButton.setOnClickListener {
+            val enable = !SettingsManager.isDemoMode(this)
+            SettingsManager.setDemoMode(this, enable)
+            if (!enable) {
+                // Fuera de la demo, lo que el avatar lleve sin haberlo desbloqueado con puntos vuelve a lo básico.
+                val profile = AvatarProfileStore.load(this)
+                val allowed = AvatarLayerCatalog.withinUnlocks(profile, SettingsManager.getGlobalPoints(this))
+                if (allowed != AvatarLayerCatalog.normalize(profile)) {
+                    AvatarProfileStore.save(this, allowed)
+                }
+            }
+            updateDemoModeButtonLabel()
+            Toast.makeText(
+                this,
+                getString(if (enable) R.string.story_hidden_menu_demo_enabled_toast else R.string.story_hidden_menu_demo_disabled_toast),
+                Toast.LENGTH_LONG
+            ).show()
+        }
+
         binding.resetGlobalPointsButton.setOnClickListener {
             val dialog = AlertDialog.Builder(this, R.style.ThemeOverlay_Aprendemos_AlertDialog)
                 .setTitle(getString(R.string.story_hidden_menu_reset_global_points))
@@ -44,5 +66,11 @@ class StoryAdminMenuActivity : BaseActivity() {
         }
 
         binding.backButton.setOnClickListener { finish() }
+    }
+
+    private fun updateDemoModeButtonLabel() {
+        binding.demoModeButton.setText(
+            if (SettingsManager.isDemoMode(this)) R.string.story_hidden_menu_demo_on else R.string.story_hidden_menu_demo_off
+        )
     }
 }

@@ -5,9 +5,9 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import com.example.aprendemoslavida.avatar.AvatarLayerCatalog
 import com.example.aprendemoslavida.avatar.AvatarProfileStore
 import com.example.aprendemoslavida.data.model.LegacyImport
-import com.example.aprendemoslavida.data.model.LegacyImportAvatar
 import com.example.aprendemoslavida.data.model.LegacyImportPreferences
 import com.example.aprendemoslavida.data.model.LegacyImportScore
 import com.example.aprendemoslavida.data.model.LegacyImportStreak
@@ -140,17 +140,7 @@ class LegacyImportActivity : BaseActivity() {
             sourceAppVersion = com.example.aprendemoslavida.BuildConfig.VERSION_NAME,
             globalPoints = SettingsManager.getGlobalPoints(this),
             preferences = preferences,
-            avatar = LegacyImportAvatar(
-                gender = avatar.gender,
-                hairStyle = avatar.hairStyle,
-                hairColor = avatar.hairColor,
-                eyeShape = avatar.eyeShape,
-                eyeColor = avatar.eyeColor,
-                mouthShape = avatar.mouthShape,
-                mouthColor = avatar.mouthColor,
-                skinTone = avatar.skinTone,
-                outfit = avatar.outfit
-            ),
+            avatar = AvatarLayerCatalog.toLegacyImport(avatar),
             streak = LegacyImportStreak(streak.streakDays, SettingsManager.getLastCompletedStoryDay(this)),
             scores = ScoreManager(this).getScoresForLegacyImport().map {
                 LegacyImportScore(

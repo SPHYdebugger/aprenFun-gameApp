@@ -28,10 +28,12 @@ class SettingsActivity : BaseActivity() {
         updateLanguageButtonLabel()
         updateQuestionTimeButtonLabel()
         updateSoundButtonLabel()
+        updateDialogueVoicesButtonLabel()
 
         binding.changeLanguageButton.setOnClickListener { toggleLanguage() }
         binding.questionTimeButton.setOnClickListener { showQuestionTimeDialog() }
         binding.soundButton.setOnClickListener { toggleSound() }
+        binding.dialogueVoicesButton.setOnClickListener { toggleDialogueVoices() }
 
         binding.backButton.setOnTouchListener { _, event ->
             when (event.actionMasked) {
@@ -107,6 +109,17 @@ class SettingsActivity : BaseActivity() {
     private fun updateSoundButtonLabel() {
         val enabled = SettingsManager.isSoundEnabled(this)
         binding.soundButton.setText(if (enabled) R.string.sound_toggle_on else R.string.sound_toggle_off)
+    }
+
+    private fun toggleDialogueVoices() {
+        val enabled = SettingsManager.isDialogueVoicesEnabled(this)
+        SettingsManager.setDialogueVoicesEnabled(this, !enabled)
+        updateDialogueVoicesButtonLabel()
+    }
+
+    private fun updateDialogueVoicesButtonLabel() {
+        val enabled = SettingsManager.isDialogueVoicesEnabled(this)
+        binding.dialogueVoicesButton.setText(if (enabled) R.string.dialogue_voices_toggle_on else R.string.dialogue_voices_toggle_off)
     }
 
     override fun onDestroy() {
