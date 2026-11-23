@@ -19,7 +19,14 @@ import com.example.aprendemoslavida.avatar.AvatarLayerCompositor
 import com.example.aprendemoslavida.avatar.AvatarProfileStore
 import com.example.aprendemoslavida.databinding.ActivityAvatarCustomizationBinding
 import com.example.aprendemoslavida.model.AvatarProfile
+import com.example.aprendemoslavida.data.network.ApiClient
+import com.example.aprendemoslavida.data.network.NetworkResult
+import com.example.aprendemoslavida.data.repository.ProgressRepository
 import com.example.aprendemoslavida.utils.SettingsManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class AvatarCustomizationActivity : BaseActivity() {
 
@@ -35,6 +42,7 @@ class AvatarCustomizationActivity : BaseActivity() {
         setContentView(binding.root)
 
         profile = AvatarLayerCatalog.normalize(AvatarProfileStore.load(this))
+        binding.avatarNameInput.setText(profile.name)
 
         setupListeners()
         refreshUi()
@@ -43,6 +51,27 @@ class AvatarCustomizationActivity : BaseActivity() {
     override fun onResume() {
         super.onResume()
         refreshUi()
+        syncServerPoints()
+    }
+
+    /**
+     * Los puntos se acumulan en el servidor (modo preguntas, modo historia y rachas). Se pide el saldo al abrir
+     * el editor y se guarda una copia local; sin conexión se usa la última copia.
+     */
+    private fun syncServerPoints() {
+        val apiClient = ApiClient.getInstance(this)
+        val childId = apiClient.tokenStorage.getActiveChildId()
+        if (childId.isNullOrBlank()) return
+        val repository = ProgressRepository(apiClient.progressApiService, apiClient.leaderboardApiService)
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = repository.getPlayerProgress(childId)
+            if (result is NetworkResult.Success) {
+                SettingsManager.setServerPointsBalance(this@AvatarCustomizationActivity, result.data.pointsBalance)
+                withContext(Dispatchers.Main) {
+                    if (!isFinishing && !isDestroyed) refreshUi()
+                }
+            }
+        }
     }
 
     private fun setupListeners() {
@@ -89,6 +118,8 @@ class AvatarCustomizationActivity : BaseActivity() {
         }
 
         binding.saveButton.setOnClickListener {
+            profile.name = AvatarLayerCatalog.cleanName(binding.avatarNameInput.text?.toString().orEmpty())
+            binding.avatarNameInput.setText(profile.name)
             AvatarProfileStore.save(this, profile)
             Toast.makeText(this, getString(R.string.avatar_saved_status), Toast.LENGTH_SHORT).show()
         }

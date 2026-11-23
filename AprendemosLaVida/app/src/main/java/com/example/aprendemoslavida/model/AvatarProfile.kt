@@ -5,6 +5,7 @@ package com.example.aprendemoslavida.model
  * - Por defecto: niña con la ropa básica (outfit = -1) y el calzado básico (shoes = 0).
  * - outfit: -1 = ropa básica común; 0..6 = prendas del género (la 6 es la de gala).
  * - shoes: 0 = calzado básico común; 1..5 = calzado del género.
+ * - name: nombre del avatar (vacío = sin nombre); Sofía lo usa al saludar.
  */
 data class AvatarProfile(
     var gender: String = "NINA",
@@ -16,5 +17,6 @@ data class AvatarProfile(
     var mouthColor: Int = 0,
     var skinTone: Int = 0,
     var outfit: Int = -1,
-    var shoes: Int = 0
+    var shoes: Int = 0,
+    var name: String = ""
 )

@@ -37,7 +37,7 @@ class StoryAdminMenuActivity : BaseActivity() {
             if (!enable) {
                 // Fuera de la demo, lo que el avatar lleve sin haberlo desbloqueado con puntos vuelve a lo básico.
                 val profile = AvatarProfileStore.load(this)
-                val allowed = AvatarLayerCatalog.withinUnlocks(profile, SettingsManager.getGlobalPoints(this))
+                val allowed = AvatarLayerCatalog.withinUnlocks(profile, SettingsManager.getAccumulatedPoints(this))
                 if (allowed != AvatarLayerCatalog.normalize(profile)) {
                     AvatarProfileStore.save(this, allowed)
                 }

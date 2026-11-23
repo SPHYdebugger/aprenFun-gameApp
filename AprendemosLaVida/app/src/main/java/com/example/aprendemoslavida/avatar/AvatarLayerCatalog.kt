@@ -108,16 +108,32 @@ object AvatarLayerCatalog {
         profile.skinTone = wrapIndex(profile.skinTone, SKINS.size)
         profile.outfit = if (profile.outfit < 0) OUTFIT_BASIC else wrapIndex(profile.outfit, OUTFIT_COUNT)
         profile.shoes = wrapIndex(profile.shoes, SHOES_COUNT)
+        profile.name = cleanName(profile.name)
         return profile
     }
 
     fun isGirl(profile: AvatarProfile): Boolean = profile.gender == GENDER_GIRL
+
+    /** Longitud máxima del nombre del avatar. */
+    const val NAME_MAX_LENGTH = 16
+
+    /** Nombre limpio: sin saltos de línea ni espacios repetidos ni en los extremos, y como mucho [NAME_MAX_LENGTH] caracteres. */
+    fun cleanName(raw: String): String =
+        raw.replace(Regex("\\s+"), " ").trim().take(NAME_MAX_LENGTH).trim()
 
     fun isOutfitUnlocked(outfit: Int, globalPoints: Int): Boolean =
         outfit == OUTFIT_BASIC || globalPoints >= OUTFIT_UNLOCK_POINTS.getOrElse(outfit) { Int.MAX_VALUE }
 
     fun isShoesUnlocked(shoes: Int, globalPoints: Int): Boolean =
         globalPoints >= SHOES_UNLOCK_POINTS.getOrElse(shoes) { Int.MAX_VALUE }
+
+    /**
+     * Puntos acumulados para los desbloqueos del avatar: el saldo del servidor (suma partidas de preguntas,
+     * modo historia y bonificaciones de racha) o, si es mayor, el contador local antiguo, que solo conserva puntos
+     * de antes de jugar con el servidor y aún no importados (no se suman para no contarlos dos veces).
+     */
+    fun accumulatedPoints(serverBalance: Int, legacyLocalPoints: Int): Int =
+        maxOf(serverBalance.coerceAtLeast(0), legacyLocalPoints.coerceAtLeast(0))
 
     /** El perfil con la ropa y el calzado no desbloqueados con [globalPoints] devueltos a los básicos (al salir del modo demo). */
     fun withinUnlocks(profile: AvatarProfile, globalPoints: Int): AvatarProfile {

@@ -23,6 +23,7 @@ object SettingsManager {
     private const val KEY_STORY_STREAK_LAST_COMPLETED_DAY = "story_streak_last_completed_day"
     private const val KEY_STORY_STREAK_LAST_BONUS_DAY = "story_streak_last_bonus_day"
     private const val KEY_GLOBAL_POINTS = "global_points"
+    private const val KEY_SERVER_POINTS_BALANCE = "server_points_balance"
     private const val STORY_TROPHY_COUNT = 10
 
     private const val DEFAULT_QUESTION_TIME_MS = 12000
@@ -123,9 +124,27 @@ object SettingsManager {
         prefs.edit().putBoolean(KEY_DEMO_MODE, enabled).apply()
     }
 
-    /** Puntos con los que se deciden los desbloqueos del avatar: en modo demo, todo; si no, los puntos reales. */
+    /** Última copia del saldo de puntos del servidor (para usarla sin conexión). */
+    fun getServerPointsBalance(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt(KEY_SERVER_POINTS_BALANCE, 0).coerceAtLeast(0)
+    }
+
+    fun setServerPointsBalance(context: Context, balance: Long) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putInt(KEY_SERVER_POINTS_BALANCE, balance.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()).apply()
+    }
+
+    /** Puntos acumulados entre todos los modos de juego (saldo del servidor), sin modo demo. */
+    fun getAccumulatedPoints(context: Context): Int =
+        com.example.aprendemoslavida.avatar.AvatarLayerCatalog.accumulatedPoints(
+            getServerPointsBalance(context),
+            getGlobalPoints(context)
+        )
+
+    /** Puntos con los que se deciden los desbloqueos del avatar: en modo demo, todo; si no, los acumulados. */
     fun getUnlockPoints(context: Context): Int =
-        if (isDemoMode(context)) Int.MAX_VALUE else getGlobalPoints(context)
+        if (isDemoMode(context)) Int.MAX_VALUE else getAccumulatedPoints(context)
 
     fun getStoryMapCount(context: Context): Int {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
