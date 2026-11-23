@@ -127,6 +127,14 @@ object AvatarLayerCatalog {
     fun isShoesUnlocked(shoes: Int, globalPoints: Int): Boolean =
         globalPoints >= SHOES_UNLOCK_POINTS.getOrElse(shoes) { Int.MAX_VALUE }
 
+    /**
+     * Puntos acumulados para los desbloqueos del avatar: el saldo del servidor (suma partidas de preguntas,
+     * modo historia y bonificaciones de racha) o, si es mayor, el contador local antiguo, que solo conserva puntos
+     * de antes de jugar con el servidor y aún no importados (no se suman para no contarlos dos veces).
+     */
+    fun accumulatedPoints(serverBalance: Int, legacyLocalPoints: Int): Int =
+        maxOf(serverBalance.coerceAtLeast(0), legacyLocalPoints.coerceAtLeast(0))
+
     /** El perfil con la ropa y el calzado no desbloqueados con [globalPoints] devueltos a los básicos (al salir del modo demo). */
     fun withinUnlocks(profile: AvatarProfile, globalPoints: Int): AvatarProfile {
         val p = normalize(profile)
