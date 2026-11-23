@@ -98,7 +98,8 @@ class AvatarCustomizationActivity : BaseActivity() {
 
     private fun refreshUi() {
         profile = AvatarLayerCatalog.normalize(profile)
-        globalPoints = SettingsManager.getGlobalPoints(this)
+        // En modo demo todo aparece desbloqueado; los puntos guardados del usuario no cambian.
+        globalPoints = SettingsManager.getUnlockPoints(this)
 
         val hairStyles = if (AvatarLayerCatalog.isGirl(profile)) HAIR_STYLE_GIRL else HAIR_STYLE_BOY
 

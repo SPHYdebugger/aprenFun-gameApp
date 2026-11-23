@@ -119,6 +119,14 @@ object AvatarLayerCatalog {
     fun isShoesUnlocked(shoes: Int, globalPoints: Int): Boolean =
         globalPoints >= SHOES_UNLOCK_POINTS.getOrElse(shoes) { Int.MAX_VALUE }
 
+    /** El perfil con la ropa y el calzado no desbloqueados con [globalPoints] devueltos a los básicos (al salir del modo demo). */
+    fun withinUnlocks(profile: AvatarProfile, globalPoints: Int): AvatarProfile {
+        val p = normalize(profile)
+        if (!isOutfitUnlocked(p.outfit, globalPoints)) p.outfit = OUTFIT_BASIC
+        if (!isShoesUnlocked(p.shoes, globalPoints)) p.shoes = 0
+        return p
+    }
+
     /**
      * Avatar para la importación de datos antiguos al servidor. El contrato no conoce la ropa básica, la de gala
      * ni el calzado (son solo del móvil): la ropa se limita a las prendas 0..5 y el calzado no se envía.

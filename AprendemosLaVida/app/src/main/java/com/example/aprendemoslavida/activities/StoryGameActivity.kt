@@ -1234,7 +1234,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
 
     private fun playDialogueClip(clip: DialogueClip) {
         stopDialogueAudio()
-        if (!globalSoundEnabled) return
+        if (!globalSoundEnabled || !SettingsManager.isDialogueVoicesEnabled(this)) return
         val resId = when (clip) {
             DialogueClip.SOFIA_1 -> R.raw.sofia1
             DialogueClip.SOFIA_2 -> R.raw.sofia2

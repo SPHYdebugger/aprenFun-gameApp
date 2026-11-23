@@ -357,4 +357,10 @@
     <string name="avatar_shoes_basic_cd">Calzado básico</string>
     <string name="avatar_shoes_cd_format">Calzado %1$d</string>
     <string name="avatar_shoes_locked_points_toast">Puntos globais: %1$d. Fáltanche %2$d puntos para desbloquear este calzado.</string>
+    <string name="dialogue_voices_toggle_on">Voces de Sofía e Santi: Activadas</string>
+    <string name="dialogue_voices_toggle_off">Voces de Sofía e Santi: Desactivadas</string>
+    <string name="story_hidden_menu_demo_on">Modo demo: Activado</string>
+    <string name="story_hidden_menu_demo_off">Modo demo: Desactivado</string>
+    <string name="story_hidden_menu_demo_enabled_toast">Modo demo activado: toda a roupa e o calzado están desbloqueados. Os puntos non cambian.</string>
+    <string name="story_hidden_menu_demo_disabled_toast">Modo demo desactivado: a roupa e o calzado volven depender dos puntos acumulados.</string>
 </resources>

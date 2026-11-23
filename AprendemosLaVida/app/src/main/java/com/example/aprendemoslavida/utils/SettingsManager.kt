@@ -15,6 +15,8 @@ object SettingsManager {
     private const val KEY_STORY_MAP_COUNT = "story_map_count"
     private const val KEY_SOUND_ENABLED = "sound_enabled"
     private const val KEY_STORY_MUSIC_ENABLED = "story_music_enabled"
+    private const val KEY_DIALOGUE_VOICES_ENABLED = "dialogue_voices_enabled"
+    private const val KEY_DEMO_MODE = "demo_mode"
     private const val KEY_STORY_TROPHY_TOPIC_PREFIX = "story_trophy_topic_"
     private const val KEY_STORY_STREAK_DAYS = "story_streak_days"
     private const val KEY_STORY_STREAK_LAST_DAY = "story_streak_last_day" // last day when streak screen was shown
@@ -98,6 +100,32 @@ object SettingsManager {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putBoolean(KEY_STORY_MUSIC_ENABLED, enabled).apply()
     }
+
+    /** Voces grabadas de los diálogos de Sofía y Santi (además necesitan el sonido general activado). */
+    fun isDialogueVoicesEnabled(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_DIALOGUE_VOICES_ENABLED, true)
+    }
+
+    fun setDialogueVoicesEnabled(context: Context, enabled: Boolean) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(KEY_DIALOGUE_VOICES_ENABLED, enabled).apply()
+    }
+
+    /** Modo demo (menú oculto): toda la ropa y el calzado desbloqueados, sin tocar los puntos del usuario. */
+    fun isDemoMode(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_DEMO_MODE, false)
+    }
+
+    fun setDemoMode(context: Context, enabled: Boolean) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(KEY_DEMO_MODE, enabled).apply()
+    }
+
+    /** Puntos con los que se deciden los desbloqueos del avatar: en modo demo, todo; si no, los puntos reales. */
+    fun getUnlockPoints(context: Context): Int =
+        if (isDemoMode(context)) Int.MAX_VALUE else getGlobalPoints(context)
 
     fun getStoryMapCount(context: Context): Int {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
