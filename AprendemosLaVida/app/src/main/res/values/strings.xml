@@ -309,7 +309,7 @@
     <string name="story_intro_character_cd">Sofía</string>
     <string name="story_intro_yes">SI</string>
     <string name="story_intro_no">NO</string>
-    <string name="story_intro_text">Hola, me llamo Sofía.\nNecesito que me ayudes a llegar al final del camino.\nResponde correctamente para obtener más puntos.\n\n¿ Te atreves ?</string>
+    <string name="story_intro_text">Hola %1$s,\n¿Te atreves a intentar pasar mis retos?\nNo te lo pondré fácil.\n\nA ver cuántos puntos eres capaz de hacer.</string>
     <string name="story_intro_no_text">Vaya que pena, pues hasta otra...\nCHAO</string>
     <string name="story_final_celebration_text">¡¡ ENHORABUENA\nLO HAS CONSEGIDO !!\n\nSe nota que sabes un montón.\nGracias por ayudarme a llegar hasta el final.\n\nVuelve cuando quieras mejorar tu puntuación...\nBYE</string>
     <string name="story_intro_back">Volver</string>
@@ -436,4 +436,7 @@
     <string name="story_hidden_menu_demo_off">Modo demo: Desactivado</string>
     <string name="story_hidden_menu_demo_enabled_toast">Modo demo activado: toda la ropa y el calzado están desbloqueados. Los puntos no cambian.</string>
     <string name="story_hidden_menu_demo_disabled_toast">Modo demo desactivado: la ropa y el calzado vuelven a depender de los puntos acumulados.</string>
+    <string name="story_intro_text_no_name">Hola,\n¿Te atreves a intentar pasar mis retos?\nNo te lo pondré fácil.\n\nA ver cuántos puntos eres capaz de hacer.</string>
+    <string name="avatar_name_label">Nombre</string>
+    <string name="avatar_name_hint">Escribe el nombre de tu avatar</string>
 </resources>

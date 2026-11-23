@@ -108,10 +108,18 @@ object AvatarLayerCatalog {
         profile.skinTone = wrapIndex(profile.skinTone, SKINS.size)
         profile.outfit = if (profile.outfit < 0) OUTFIT_BASIC else wrapIndex(profile.outfit, OUTFIT_COUNT)
         profile.shoes = wrapIndex(profile.shoes, SHOES_COUNT)
+        profile.name = cleanName(profile.name)
         return profile
     }
 
     fun isGirl(profile: AvatarProfile): Boolean = profile.gender == GENDER_GIRL
+
+    /** Longitud máxima del nombre del avatar. */
+    const val NAME_MAX_LENGTH = 16
+
+    /** Nombre limpio: sin saltos de línea ni espacios repetidos ni en los extremos, y como mucho [NAME_MAX_LENGTH] caracteres. */
+    fun cleanName(raw: String): String =
+        raw.replace(Regex("\\s+"), " ").trim().take(NAME_MAX_LENGTH).trim()
 
     fun isOutfitUnlocked(outfit: Int, globalPoints: Int): Boolean =
         outfit == OUTFIT_BASIC || globalPoints >= OUTFIT_UNLOCK_POINTS.getOrElse(outfit) { Int.MAX_VALUE }

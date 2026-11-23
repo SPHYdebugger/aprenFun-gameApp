@@ -784,7 +784,7 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
                 binding.introBackButton.visibility = View.VISIBLE
             }
         }
-        startTypewriter(getString(R.string.story_intro_text), clip = DialogueClip.SOFIA_1) {
+        startTypewriter(sofiaGreeting(), clip = DialogueClip.SOFIA_1) {
             if (!introDeclined) binding.introButtonsRow.visibility = View.VISIBLE
         }
     }
@@ -1185,6 +1185,14 @@ class StoryGameActivity : BaseActivity(), StoryGameView.Listener, StoryQuestionD
     }
 
     // ---------------------------------------------------------------- typewriter
+
+    /** Saludo inicial de Sofía con el nombre del avatar (o sin nombre si aún no tiene). */
+    private fun sofiaGreeting(): String {
+        val name = com.example.aprendemoslavida.avatar.AvatarLayerCatalog.cleanName(
+            com.example.aprendemoslavida.avatar.AvatarProfileStore.load(this).name
+        )
+        return if (name.isEmpty()) getString(R.string.story_intro_text_no_name) else getString(R.string.story_intro_text, name)
+    }
 
     private fun startTypewriter(text: String, clip: DialogueClip = DialogueClip.NONE, onFinished: (() -> Unit)? = null) {
         cancelTypewriter()

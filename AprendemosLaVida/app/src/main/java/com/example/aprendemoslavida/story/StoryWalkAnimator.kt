@@ -74,8 +74,8 @@ class StoryWalkAnimator(
     }
 
     companion object {
-        /** Distancia (en tiles) que se recorre por cada frame del ciclo: un ciclo completo cada tile. */
-        const val TILES_PER_FRAME = 0.25f
+        /** Distancia (en tiles) que se recorre por cada frame del ciclo (~8,5 frames por segundo a la velocidad del juego). */
+        const val TILES_PER_FRAME = 0.33f
 
         /** tan(55°): para cambiar de eje hay que pasar unos 10° de la diagonal (20° de banda en total). */
         const val AXIS_SWITCH_RATIO = 1.428f

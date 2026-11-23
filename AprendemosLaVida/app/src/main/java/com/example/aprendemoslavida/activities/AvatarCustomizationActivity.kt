@@ -35,6 +35,7 @@ class AvatarCustomizationActivity : BaseActivity() {
         setContentView(binding.root)
 
         profile = AvatarLayerCatalog.normalize(AvatarProfileStore.load(this))
+        binding.avatarNameInput.setText(profile.name)
 
         setupListeners()
         refreshUi()
@@ -89,6 +90,8 @@ class AvatarCustomizationActivity : BaseActivity() {
         }
 
         binding.saveButton.setOnClickListener {
+            profile.name = AvatarLayerCatalog.cleanName(binding.avatarNameInput.text?.toString().orEmpty())
+            binding.avatarNameInput.setText(profile.name)
             AvatarProfileStore.save(this, profile)
             Toast.makeText(this, getString(R.string.avatar_saved_status), Toast.LENGTH_SHORT).show()
         }
