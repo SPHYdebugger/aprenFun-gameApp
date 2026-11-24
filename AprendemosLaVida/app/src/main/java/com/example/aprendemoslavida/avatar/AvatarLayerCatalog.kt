@@ -26,15 +26,17 @@ object AvatarLayerCatalog {
     /** Valor de outfit para la ropa básica común (polo blanco y pantalón largo azul). */
     const val OUTFIT_BASIC = -1
 
-    const val HAIR_STYLE_COUNT = 3
-    const val HAIR_COLOR_COUNT = 3
+    const val HAIR_STYLE_COUNT = 7
+
+    /** Colores: 0 negro, 1 castaño, 2 rubio, 3 rojizo, 4 amarillo, 5 gris. */
+    const val HAIR_COLOR_COUNT = 6
 
     private val SKINS = arrayOf("01", "03", "05")
     private const val BASIC_OUTFIT = "basic_01"
     private val BOY_OUTFITS = arrayOf("boy_01", "boy_02", "boy_03", "boy_04", "boy_05", "boy_06", "boy_07")
     private val GIRL_OUTFITS = arrayOf("girl_01", "girl_02", "girl_03", "girl_04", "girl_05b", "girl_06", "girl_07")
-    private val BOY_HAIRS = arrayOf("boy_01", "boy_02", "boy_03")
-    private val GIRL_HAIRS = arrayOf("girl_01", "girl_02", "girl_03")
+    private val BOY_HAIRS = arrayOf("boy_01", "boy_02", "boy_03", "boy_04", "boy_05", "boy_06", "boy_07")
+    private val GIRL_HAIRS = arrayOf("girl_01", "girl_02", "girl_03", "girl_04", "girl_05", "girl_06", "girl_07")
     private val BOY_SHOES = arrayOf("basic", "boy_01", "boy_02", "boy_03", "boy_04", "boy_05")
     private val GIRL_SHOES = arrayOf("basic", "girl_01", "girl_02", "girl_03", "girl_04", "girl_05")
 
@@ -144,15 +146,15 @@ object AvatarLayerCatalog {
     }
 
     /**
-     * Avatar para la importación de datos antiguos al servidor. El contrato no conoce la ropa básica, la de gala
-     * ni el calzado (son solo del móvil): la ropa se limita a las prendas 0..5 y el calzado no se envía.
+     * Avatar para la importación de datos antiguos al servidor. El contrato no conoce la ropa básica, la de gala,
+     * el calzado ni los peinados y colores nuevos (son solo del móvil): se limitan a los valores originales.
      */
     fun toLegacyImport(profile: AvatarProfile): LegacyImportAvatar {
         val p = normalize(profile)
         return LegacyImportAvatar(
             gender = p.gender,
-            hairStyle = p.hairStyle,
-            hairColor = p.hairColor,
+            hairStyle = p.hairStyle.coerceIn(0, LEGACY_MAX_HAIR_INDEX),
+            hairColor = p.hairColor.coerceIn(0, LEGACY_MAX_HAIR_INDEX),
             eyeShape = p.eyeShape,
             eyeColor = p.eyeColor,
             mouthShape = p.mouthShape,
@@ -163,8 +165,10 @@ object AvatarLayerCatalog {
     }
 
     private const val LEGACY_MAX_OUTFIT = 5
+    /** El servidor solo conoce los 3 peinados y 3 colores originales (índices 0..2). */
+    private const val LEGACY_MAX_HAIR_INDEX = 2
 
-    /** Todas las combinaciones válidas: 2 géneros × 3 peinados × 3 colores × 3 pieles × 8 prendas × 6 calzados. */
+    /** Todas las combinaciones válidas: 2 géneros × 7 peinados × 6 colores × 3 pieles × 8 prendas × 6 calzados. */
     fun allProfiles(): List<AvatarProfile> {
         val result = ArrayList<AvatarProfile>()
         for (gender in arrayOf(GENDER_BOY, GENDER_GIRL))
