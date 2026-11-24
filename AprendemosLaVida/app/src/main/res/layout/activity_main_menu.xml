@@ -85,6 +85,18 @@
         app:layout_constraintTop_toBottomOf="@+id/importLegacyButton" />
 
     <com.google.android.material.button.MaterialButton
+        android:id="@+id/switchProfileButton"
+        style="@style/Widget.Aprendemos.Button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginTop="16dp"
+        android:text="@string/main_switch_profile"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/progressButton" />
+
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/exitButton"
         style="@style/Widget.Aprendemos.Button"
         android:layout_width="0dp"
@@ -95,6 +107,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/progressButton" />
+        app:layout_constraintTop_toBottomOf="@+id/switchProfileButton" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

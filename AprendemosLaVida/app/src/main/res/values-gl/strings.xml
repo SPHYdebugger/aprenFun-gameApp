@@ -366,4 +366,5 @@
     <string name="story_intro_text_no_name">Ola,\n¿Atréveste a tentar superar os meus retos?\nNon cho vou poñer fácil.\n\nA ver cantos puntos es quen de facer.</string>
     <string name="avatar_name_label">Nome</string>
     <string name="avatar_name_hint">Escribe o nome do teu avatar</string>
+    <string name="main_switch_profile">Cambiar de perfil 👤</string>
 </resources>

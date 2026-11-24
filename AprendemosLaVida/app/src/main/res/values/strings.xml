@@ -439,4 +439,5 @@
     <string name="story_intro_text_no_name">Hola,\n¿Te atreves a intentar pasar mis retos?\nNo te lo pondré fácil.\n\nA ver cuántos puntos eres capaz de hacer.</string>
     <string name="avatar_name_label">Nombre</string>
     <string name="avatar_name_hint">Escribe el nombre de tu avatar</string>
+    <string name="main_switch_profile">Cambiar de perfil 👤</string>
 </resources>

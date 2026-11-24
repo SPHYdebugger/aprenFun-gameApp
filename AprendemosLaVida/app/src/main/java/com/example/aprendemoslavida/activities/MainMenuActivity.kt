@@ -43,6 +43,12 @@ class MainMenuActivity : BaseActivity() {
             startActivity(Intent(this, ProgressActivity::class.java))
         }
 
+        // Cambiar de perfil: lleva a «¿Quién va a jugar?», donde activar otro niño o crear un perfil nuevo
+        // pide la contraseña del adulto.
+        binding.switchProfileButton.setOnClickListener {
+            startActivity(Intent(this, ChildSelectorActivity::class.java))
+        }
+
         binding.exitButton.setOnClickListener {
             val dialog = AlertDialog.Builder(this, R.style.ThemeOverlay_Aprendemos_AlertDialog)
                 .setTitle(getString(R.string.exit_confirm_title))
