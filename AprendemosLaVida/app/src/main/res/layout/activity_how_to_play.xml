@@ -28,6 +28,7 @@
         app:layout_constraintTop_toTopOf="@+id/logoSafeTop" />
 
     <ScrollView
+        android:scrollbars="none"
         android:id="@+id/howToScroll"
         android:layout_width="0dp"
         android:layout_height="0dp"

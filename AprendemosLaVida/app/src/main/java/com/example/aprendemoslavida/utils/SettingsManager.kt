@@ -127,12 +127,22 @@ object SettingsManager {
     /** Última copia del saldo de puntos del servidor (para usarla sin conexión). */
     fun getServerPointsBalance(context: Context): Int {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getInt(KEY_SERVER_POINTS_BALANCE, 0).coerceAtLeast(0)
+        return prefs.getInt(serverPointsKey(context), 0).coerceAtLeast(0)
+    }
+
+    /** La copia del saldo es de cada niño, para no mostrar un momento los puntos del anterior al cambiar de perfil. */
+    private fun serverPointsKey(context: Context): String {
+        val childId = try {
+            com.example.aprendemoslavida.data.network.ApiClient.getInstance(context).tokenStorage.getActiveChildId()
+        } catch (_: Exception) {
+            null
+        }
+        return if (childId.isNullOrBlank()) KEY_SERVER_POINTS_BALANCE else "${KEY_SERVER_POINTS_BALANCE}_$childId"
     }
 
     fun setServerPointsBalance(context: Context, balance: Long) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putInt(KEY_SERVER_POINTS_BALANCE, balance.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()).apply()
+        prefs.edit().putInt(serverPointsKey(context), balance.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()).apply()
     }
 
     /** Puntos acumulados entre todos los modos de juego (saldo del servidor), sin modo demo. */
