@@ -109,7 +109,11 @@ class ChildSelectorActivity : BaseActivity() {
                 binding.progressBar.visibility = View.GONE
                 when (result) {
                     is NetworkResult.Success -> {
-                        startActivity(Intent(this@ChildSelectorActivity, MainMenuActivity::class.java))
+                        startActivity(
+                            Intent(this@ChildSelectorActivity, MainMenuActivity::class.java).addFlags(
+                                Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                            )
+                        )
                         finish()
                     }
                     is NetworkResult.Error -> {

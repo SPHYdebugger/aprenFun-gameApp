@@ -49,6 +49,7 @@
         app:layout_constraintTop_toBottomOf="@+id/progressText" />
 
     <androidx.core.widget.NestedScrollView
+        android:scrollbars="none"
         android:id="@+id/questionScroll"
         android:layout_width="0dp"
         android:layout_height="0dp"

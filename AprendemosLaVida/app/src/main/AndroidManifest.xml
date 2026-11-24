@@ -89,10 +89,6 @@
             android:exported="false"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".activities.LegacyImportActivity"
-            android:exported="false"
-            android:screenOrientation="portrait" />
-        <activity
             android:name=".activities.ProgressActivity"
             android:exported="false"
             android:screenOrientation="portrait" />

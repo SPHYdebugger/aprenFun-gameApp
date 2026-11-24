@@ -1,6 +1,8 @@
 package com.example.aprendemoslavida.avatar
 
 import android.content.Context
+import android.content.SharedPreferences
+import com.example.aprendemoslavida.data.network.ApiClient
 import com.example.aprendemoslavida.model.AvatarProfile
 import org.json.JSONObject
 
@@ -10,7 +12,8 @@ object AvatarProfileStore {
 
     fun load(context: Context): AvatarProfile {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val raw = prefs.getString(KEY_PROFILE_JSON, null) ?: return AvatarProfile()
+        val key = keyForChild(activeChildId(context))
+        val raw = prefs.getString(key, null) ?: migrateDeviceProfile(prefs, key) ?: return AvatarProfile()
         val defaults = AvatarProfile()
         return try {
             val json = JSONObject(raw)
@@ -47,11 +50,30 @@ object AvatarProfileStore {
             put("name", AvatarLayerCatalog.cleanName(profile.name))
         }
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putString(KEY_PROFILE_JSON, json.toString()).apply()
+        prefs.edit().putString(keyForChild(activeChildId(context)), json.toString()).apply()
         try {
             StoryPlayerSpriteSheetStore.ensureGenerated(context, profile)
         } catch (_: Exception) {
             // If dynamic generation fails we keep gameplay working with the bundled fallback sprites.
         }
+    }
+
+    /** Clave del avatar de cada niño: el avatar va con el perfil infantil activo, no con el móvil. */
+    fun keyForChild(childId: String?): String =
+        if (childId.isNullOrBlank()) KEY_PROFILE_JSON else "${KEY_PROFILE_JSON}_$childId"
+
+    private fun activeChildId(context: Context): String? =
+        try {
+            ApiClient.getInstance(context).tokenStorage.getActiveChildId()
+        } catch (_: Exception) {
+            null
+        }
+
+    /** El avatar que había antes (uno por móvil) pasa, una sola vez, al primer niño que entra. */
+    private fun migrateDeviceProfile(prefs: SharedPreferences, key: String): String? {
+        if (key == KEY_PROFILE_JSON) return null
+        val legacy = prefs.getString(KEY_PROFILE_JSON, null) ?: return null
+        prefs.edit().putString(key, legacy).remove(KEY_PROFILE_JSON).apply()
+        return legacy
     }
 }

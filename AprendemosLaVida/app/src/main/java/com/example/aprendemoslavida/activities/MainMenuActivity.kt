@@ -35,12 +35,14 @@ class MainMenuActivity : BaseActivity() {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
 
-        binding.importLegacyButton.setOnClickListener {
-            startActivity(Intent(this, LegacyImportActivity::class.java))
-        }
-
         binding.progressButton.setOnClickListener {
             startActivity(Intent(this, ProgressActivity::class.java))
+        }
+
+        // Cambiar de perfil: lleva a «¿Quién va a jugar?», donde activar otro niño o crear un perfil nuevo
+        // pide la contraseña del adulto.
+        binding.switchProfileButton.setOnClickListener {
+            startActivity(Intent(this, ChildSelectorActivity::class.java))
         }
 
         binding.exitButton.setOnClickListener {
