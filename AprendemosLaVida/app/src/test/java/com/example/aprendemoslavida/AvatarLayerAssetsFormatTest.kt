@@ -26,8 +26,8 @@ class AvatarLayerAssetsFormatTest {
     @Test
     fun `las hojas del modo historia son 4x4 de 192 px`() {
         val sheets = File(avatarDir, "story").listFiles { f -> f.extension == "png" }.orEmpty()
-        // 3 cuerpos + 15 prendas + 15 máscaras + 18 pelos + 11 calzados
-        assertEquals(3 + 15 + 15 + 18 + 11, sheets.size)
+        // 3 cuerpos + 15 prendas + 15 máscaras + 84 pelos (14 peinados × 6 colores) + 11 calzados
+        assertEquals(3 + 15 + 15 + 84 + 11, sheets.size)
         for (sheet in sheets) {
             assertEquals("Tamaño de ${sheet.name}", 768 to 768, pngSize(sheet))
         }
@@ -39,7 +39,7 @@ class AvatarLayerAssetsFormatTest {
             .map { AvatarLayerCatalog.editorLayers(it) }
             .flatMap { listOf(it.body, it.shoes, it.outfit, it.outfitMask, it.hair) }
             .distinct()
-        assertEquals(3 + 11 + 15 + 15 + 18, catalogLayers.size)
+        assertEquals(3 + 11 + 15 + 15 + 84, catalogLayers.size)
         val allPngs = avatarDir.listFiles { f -> f.isFile && f.extension == "png" }.orEmpty()
         for (layer in allPngs) {
             assertEquals("Tamaño de ${layer.name}", 512 to 512, pngSize(layer))

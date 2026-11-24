@@ -310,10 +310,10 @@ class AvatarCustomizationActivity : BaseActivity() {
         (value * resources.displayMetrics.density).toInt()
 
     companion object {
-        private val HAIR_STYLE_BOY = arrayOf("Corto", "Desordenado", "Flequillo")
-        private val HAIR_STYLE_GIRL = arrayOf("Largo", "Coletas", "Bob")
+        private val HAIR_STYLE_BOY = arrayOf("Rizado", "Flequillo", "Desordenado", "Rapado", "Tupé", "Media melena", "Rastas")
+        private val HAIR_STYLE_GIRL = arrayOf("Coletas bajas", "Trenzas", "Moños", "Melena lisa", "Coleta alta", "Bob", "Afro")
 
-        private val HAIR_COLOR_NAMES = arrayOf("Negro", "Castano", "Rubio")
+        private val HAIR_COLOR_NAMES = arrayOf("Negro", "Castaño", "Rubio", "Rojizo", "Amarillo", "Gris")
         private val SKIN_NAMES = arrayOf("Tono 1", "Tono 2", "Tono 3")
 
         private val OUTFIT_DESCRIPTIONS = intArrayOf(

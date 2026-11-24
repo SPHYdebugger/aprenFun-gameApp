@@ -15,8 +15,8 @@ class AvatarLayerCatalogTest {
     @Test
     fun `todas las combinaciones tienen sus capas en assets`() {
         val profiles = AvatarLayerCatalog.allProfiles()
-        // 2 géneros × 3 peinados × 3 colores × 3 pieles × (básica + 7 prendas) × 6 calzados
-        assertEquals(2 * 3 * 3 * 3 * 8 * 6, profiles.size)
+        // 2 géneros × 7 peinados × 6 colores × 3 pieles × (básica + 7 prendas) × 6 calzados
+        assertEquals(2 * 7 * 6 * 3 * 8 * 6, profiles.size)
         val missing = profiles.flatMap { profile ->
             val story = AvatarLayerCatalog.storyLayers(profile)
             val editor = AvatarLayerCatalog.editorLayers(profile)
@@ -74,8 +74,11 @@ class AvatarLayerCatalogTest {
     fun `normalizacion - basica se conserva, indices dan la vuelta, genero desconocido es nina`() {
         val odd = AvatarLayerCatalog.normalize(AvatarProfile(gender = "X", hairStyle = 4, hairColor = -1, skinTone = 5, outfit = 8, shoes = 7))
         assertEquals("NINA", odd.gender)
-        assertEquals(1, odd.hairStyle)
-        assertEquals(2, odd.hairColor)
+        assertEquals(4, odd.hairStyle)
+        assertEquals(5, odd.hairColor)
+        val wrapped = AvatarLayerCatalog.normalize(AvatarProfile(hairStyle = 9, hairColor = 8))
+        assertEquals(2, wrapped.hairStyle)
+        assertEquals(2, wrapped.hairColor)
         assertEquals(2, odd.skinTone)
         assertEquals(1, odd.outfit)
         assertEquals(1, odd.shoes)
@@ -117,5 +120,17 @@ class AvatarLayerCatalogTest {
         assertEquals(2, normal.skinTone)
         assertEquals(1, normal.hairStyle)
         assertEquals(2, normal.hairColor)
+        // peinados y colores nuevos: el servidor solo conoce 0..2
+        val nuevo = AvatarLayerCatalog.toLegacyImport(AvatarProfile(gender = "NINA", hairStyle = 6, hairColor = 5))
+        assertTrue(nuevo.hairStyle in 0..2)
+        assertTrue(nuevo.hairColor in 0..2)
+    }
+
+    @Test
+    fun `peinados y colores nuevos tienen sus capas`() {
+        val girl = AvatarLayerCatalog.storyLayers(AvatarProfile(gender = "NINA", hairStyle = 6, hairColor = 3))
+        assertEquals("avatar/story/hair_girl_07_c3.png", girl.hair)
+        val boy = AvatarLayerCatalog.editorLayers(AvatarProfile(gender = "NINO", hairStyle = 3, hairColor = 5))
+        assertEquals("avatar/hair_boy_04_c5.png", boy.hair)
     }
 }
